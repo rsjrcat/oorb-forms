@@ -1,0 +1,111 @@
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Star } from "lucide-react";
+
+export default function HDMediaNetwork() {
+  return (
+    <div className="font-sans bg-white text-gray-900">
+      {/* Header */}
+      <header className="sticky top-0 z-50 bg-white shadow-sm p-4 flex justify-between items-center">
+        <div className="text-xl font-bold">HD Media Network</div>
+        <nav className="space-x-6 hidden md:block">
+          <a href="#services">Services</a>
+          <a href="#portfolio">Portfolio</a>
+          <a href="#blog">Blog</a>
+          <a href="#contact">Contact</a>
+        </nav>
+        <Button>Get a Quote</Button>
+      </header>
+
+      {/* Hero */}
+      <section className="text-center py-20 px-4 bg-gradient-to-r from-blue-50 to-blue-100">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4">
+          Digital Experiences That Build Brands
+        </h1>
+        <p className="mb-6 text-lg max-w-xl mx-auto">
+          We create stunning websites and platforms for businesses of all sizes.
+        </p>
+        <div className="space-x-4">
+          <Button>Book a Free Consultation</Button>
+          <Button variant="outline">View Our Work</Button>
+        </div>
+      </section>
+
+      {/* Services */}
+      <section id="services" className="py-16 px-4 max-w-5xl mx-auto">
+        <h2 className="text-3xl font-semibold text-center mb-10">Our Services</h2>
+        <div className="grid md:grid-cols-4 gap-6">
+          {["Web Design & UX", "Web Development", "SEO & Strategy", "Branding"].map(
+            (service, i) => (
+              <Card key={i} className="text-center p-6">
+                <CardContent>
+                  <div className="text-xl font-medium mb-2">{service}</div>
+                  <p className="text-sm text-gray-600">
+                    High-quality, tailored solutions to match your business goals.
+                  </p>
+                </CardContent>
+              </Card>
+            )
+          )}
+        </div>
+      </section>
+
+      {/* Portfolio */}
+      <section id="portfolio" className="py-16 px-4 bg-gray-50">
+        <h2 className="text-3xl font-semibold text-center mb-10">Our Work</h2>
+        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="h-48 bg-white shadow-md" />
+          ))}
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-16 px-4 max-w-4xl mx-auto">
+        <h2 className="text-3xl font-semibold text-center mb-10">What Clients Say</h2>
+        <div className="grid md:grid-cols-2 gap-6">
+          {["Amazing service!", "Top-notch design!"]?.map((text, i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <p className="italic mb-2">"{text}"</p>
+                <div className="flex items-center space-x-2 text-yellow-500">
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} size={16} fill="currentColor" />
+                  ))}
+                </div>
+                <p className="text-sm text-gray-500 mt-2">— Happy Client</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      {/* Contact Form */}
+      <section id="contact" className="py-20 px-4 bg-blue-50">
+        <h2 className="text-3xl font-semibold text-center mb-10">Ready to Start?</h2>
+        <form className="max-w-2xl mx-auto grid gap-4">
+          <Input placeholder="Your Name" />
+          <Input placeholder="Email Address" type="email" />
+          <Input placeholder="Project Type" />
+          <Textarea placeholder="Tell us about your project" rows={4} />
+          <Button>Send Request</Button>
+        </form>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-10 px-4 bg-gray-900 text-white text-center">
+        <div className="mb-4 font-bold text-lg">HD Media Network</div>
+        <div className="space-x-4 text-sm">
+          <a href="#services">Services</a>
+          <a href="#portfolio">Portfolio</a>
+          <a href="#blog">Blog</a>
+          <a href="#contact">Contact</a>
+        </div>
+        <div className="mt-4 text-xs">© 2025 HD Media Network. All rights reserved.</div>
+      </footer>
+    </div>
+  );
+}
