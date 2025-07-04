@@ -14,7 +14,8 @@ const fieldSchema = new mongoose.Schema({
   validation: {
     minLength: Number,
     maxLength: Number,
-    pattern: String
+    pattern: String,
+    errorMessage: String
   }
 });
 
@@ -28,7 +29,8 @@ const formSchema = new mongoose.Schema({
     showProgressBar: { type: Boolean, default: true },
     customTheme: {
       primaryColor: { type: String, default: '#3B82F6' },
-      backgroundColor: { type: String, default: '#FFFFFF' }
+      backgroundColor: { type: String, default: '#FFFFFF' },
+      fontFamily: { type: String, default: 'Inter' }
     }
   },
   status: { 
@@ -37,14 +39,28 @@ const formSchema = new mongoose.Schema({
     default: 'draft' 
   },
   shareUrl: { type: String, unique: true },
-  createdBy: { type: String, default: 'anonymous' },
+  createdBy: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User', 
+    required: true 
+  },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
   
   // Analytics
   views: { type: Number, default: 0 },
   responses: { type: Number, default: 0 },
-  completionRate: { type: Number, default: 0 }
+  completionRate: { type: Number, default: 0 },
+  
+  // Conditional Logic
+  conditionalRules: [{
+    id: String,
+    fieldId: String,
+    condition: { type: String, enum: ['equals', 'not_equals', 'contains', 'greater_than', 'less_than'] },
+    value: String,
+    action: { type: String, enum: ['show', 'hide', 'require', 'skip_to'] },
+    targetFieldId: String
+  }]
 });
 
 // Generate unique share URL before saving

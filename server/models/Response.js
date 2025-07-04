@@ -17,7 +17,9 @@ const responseSchema = new mongoose.Schema({
   submitterInfo: {
     ip: String,
     userAgent: String,
-    location: String
+    location: String,
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    savedToAccount: { type: Boolean, default: false }
   },
   completionTime: Number, // in seconds
   isComplete: { type: Boolean, default: true }

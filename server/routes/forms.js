@@ -1,23 +1,24 @@
 import express from 'express';
 import Form from '../models/Form.js';
 import Response from '../models/Response.js';
+import { authenticateToken, optionalAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get all forms
-router.get('/', async (req, res) => {
+// Get all forms (protected)
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const forms = await Form.find().sort({ updatedAt: -1 });
+    const forms = await Form.find({ createdBy: req.user._id }).sort({ updatedAt: -1 });
     res.json(forms);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// Get form by ID
-router.get('/:id', async (req, res) => {
+// Get form by ID (protected)
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
-    const form = await Form.findById(req.params.id);
+    const form = await Form.findOne({ _id: req.params.id, createdBy: req.user._id });
     if (!form) {
       return res.status(404).json({ error: 'Form not found' });
     }
@@ -45,10 +46,13 @@ router.get('/share/:shareUrl', async (req, res) => {
   }
 });
 
-// Create new form
-router.post('/', async (req, res) => {
+// Create new form (protected)
+router.post('/', authenticateToken, async (req, res) => {
   try {
-    const form = new Form(req.body);
+    const form = new Form({
+      ...req.body,
+      createdBy: req.user._id
+    });
     await form.save();
     res.status(201).json(form);
   } catch (error) {
@@ -56,11 +60,11 @@ router.post('/', async (req, res) => {
   }
 });
 
-// Update form
-router.put('/:id', async (req, res) => {
+// Update form (protected)
+router.put('/:id', authenticateToken, async (req, res) => {
   try {
-    const form = await Form.findByIdAndUpdate(
-      req.params.id,
+    const form = await Form.findOneAndUpdate(
+      { _id: req.params.id, createdBy: req.user._id },
       { ...req.body, updatedAt: new Date() },
       { new: true, runValidators: true }
     );
@@ -73,10 +77,10 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// Delete form
-router.delete('/:id', async (req, res) => {
+// Delete form (protected)
+router.delete('/:id', authenticateToken, async (req, res) => {
   try {
-    const form = await Form.findByIdAndDelete(req.params.id);
+    const form = await Form.findOneAndDelete({ _id: req.params.id, createdBy: req.user._id });
     if (!form) {
       return res.status(404).json({ error: 'Form not found' });
     }
@@ -90,11 +94,11 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-// Publish form
-router.post('/:id/publish', async (req, res) => {
+// Publish form (protected)
+router.post('/:id/publish', authenticateToken, async (req, res) => {
   try {
-    const form = await Form.findByIdAndUpdate(
-      req.params.id,
+    const form = await Form.findOneAndUpdate(
+      { _id: req.params.id, createdBy: req.user._id },
       { status: 'published', updatedAt: new Date() },
       { new: true }
     );
@@ -107,10 +111,10 @@ router.post('/:id/publish', async (req, res) => {
   }
 });
 
-// Get form analytics
-router.get('/:id/analytics', async (req, res) => {
+// Get form analytics (protected)
+router.get('/:id/analytics', authenticateToken, async (req, res) => {
   try {
-    const form = await Form.findById(req.params.id);
+    const form = await Form.findOne({ _id: req.params.id, createdBy: req.user._id });
     if (!form) {
       return res.status(404).json({ error: 'Form not found' });
     }

@@ -9,6 +9,45 @@ const api = axios.create({
   },
 });
 
+// Add token to requests if available
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Handle token expiration
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // Optionally redirect to login
+    }
+    return Promise.reject(error);
+  }
+);
+
+// Auth API
+export const authAPI = {
+  // Sign up
+  signup: (userData: { name: string; email: string; password: string }) => 
+    api.post('/auth/signup', userData),
+  
+  // Login
+  login: (credentials: { email: string; password: string }) => 
+    api.post('/auth/login', credentials),
+  
+  // Get current user
+  getCurrentUser: () => api.get('/auth/me'),
+  
+  // Logout
+  logout: () => api.post('/auth/logout'),
+};
+
 // Form API
 export const formAPI = {
   // Get all forms
@@ -66,6 +105,33 @@ export const exportAPI = {
   downloadCSV: (formId: string) => {
     window.open(`${API_BASE_URL}/exports/csv/${formId}`, '_blank');
   },
+};
+
+// Integration API
+export const integrationAPI = {
+  // Get integrations for form
+  getIntegrations: (formId: string) => api.get(`/integrations/form/${formId}`),
+  
+  // Create integration
+  createIntegration: (integrationData: any) => api.post('/integrations', integrationData),
+  
+  // Update integration
+  updateIntegration: (id: string, integrationData: any) => api.put(`/integrations/${id}`, integrationData),
+  
+  // Delete integration
+  deleteIntegration: (id: string) => api.delete(`/integrations/${id}`),
+  
+  // Test integration
+  testIntegration: (id: string) => api.post(`/integrations/${id}/test`),
+};
+
+// Template API
+export const templateAPI = {
+  // Get all templates
+  getTemplates: (category?: string) => api.get(`/templates${category ? `?category=${category}` : ''}`),
+  
+  // Get template by ID
+  getTemplate: (id: string) => api.get(`/templates/${id}`),
 };
 
 export default api;
