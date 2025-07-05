@@ -17,6 +17,7 @@ const RegisterPage: React.FC = () => {
   // Redirect if already logged in
   useEffect(() => {
     if (user) {
+      console.log('User already authenticated, redirecting to dashboard');
       navigate('/oorb-forms', { replace: true });
     }
   }, [user, navigate]);
@@ -34,8 +35,9 @@ const RegisterPage: React.FC = () => {
     try {
       const success = await register(name, email, password);
       if (success) {
-        // Navigation will be handled by the useEffect above when user state changes
-        console.log('Registration successful, redirecting...');
+        console.log('Registration successful, navigating to dashboard');
+        // Force navigation after successful registration
+        navigate('/oorb-forms', { replace: true });
       }
     } catch (error) {
       console.error('Registration error:', error);
@@ -43,6 +45,18 @@ const RegisterPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  // Don't render if user is already authenticated
+  if (user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">

@@ -50,21 +50,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const checkAuthStatus = async () => {
-    try {
-      const token = localStorage.getItem('authToken');
-      if (token) {
+  setLoading(true);
+  try {
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
         const response = await authAPI.getCurrentUser();
         setUser(response.data);
-        console.log('User authenticated:', response.data);
+        console.log('Auth check successful', response.data);
+      } catch (error) {
+        console.error('Token validation failed', error);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        setUser(null);
       }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('user');
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (error) {
+    console.error('Auth check failed:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
@@ -74,12 +80,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       console.log('Login response:', { token: token ? 'received' : 'missing', user: userData });
       
-      localStorage.setItem('authToken', token);
+      // Store token with consistent key
+      localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userData));
+      
+      // Set user state
       setUser(userData);
       
       toast.success('Login successful!');
-      console.log('User state updated, should redirect now');
+      console.log('User state updated successfully');
       return true;
     } catch (error: any) {
       console.error('Login error:', error);
@@ -96,12 +105,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       console.log('Registration response:', { token: token ? 'received' : 'missing', user: userData });
       
-      localStorage.setItem('authToken', token);
+      // Store token with consistent key
+      localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(userData));
+      
+      // Set user state
       setUser(userData);
       
       toast.success('Registration successful!');
-      console.log('User state updated, should redirect now');
+      console.log('User state updated successfully');
       return true;
     } catch (error: any) {
       console.error('Registration error:', error);
@@ -111,6 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
+    localStorage.removeItem('token');
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     setUser(null);
