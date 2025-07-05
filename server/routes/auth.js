@@ -4,13 +4,11 @@ import User from '../models/User.js';
 
 const router = express.Router();
 
-// Generate JWT token
-const generateToken = (userId) => {
-  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
-};
+// JWT Secret (in production, use environment variable)
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
-// Register user
-router.post('/signup', async (req, res) => {
+// Register
+router.post('/register', async (req, res) => {
   try {
     const { name, email, password } = req.body;
 
@@ -21,33 +19,38 @@ router.post('/signup', async (req, res) => {
     }
 
     // Create new user
-    const user = new User({
-      name,
-      email,
-      password
-    });
-
+    const user = new User({ name, email, password });
     await user.save();
 
-    // Generate token
-    const token = generateToken(user._id);
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Return user data (without password)
+    const userData = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      role: user.role,
+      preferences: user.preferences,
+      createdAt: user.createdAt
+    };
 
     res.status(201).json({
-      message: 'User created successfully',
+      message: 'User registered successfully',
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: userData
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
 
-// Login user
+// Login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -65,53 +68,72 @@ router.post('/login', async (req, res) => {
     }
 
     // Update last login
-    user.lastLogin = new Date();
-    await user.save();
+    await user.updateLastLogin();
 
-    // Generate token
-    const token = generateToken(user._id);
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user._id, email: user.email },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    // Return user data (without password)
+    const userData = {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      avatar: user.avatar,
+      role: user.role,
+      preferences: user.preferences,
+      lastLogin: user.lastLogin
+    };
 
     res.json({
       message: 'Login successful',
       token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      user: userData
     });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
 // Get current user
-router.get('/me', async (req, res) => {
+router.get('/me', authenticateToken, async (req, res) => {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.userId);
-
+    const user = await User.findById(req.user.userId).select('-password');
     if (!user) {
-      return res.status(401).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'User not found' });
     }
+
+    res.json(user);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Update profile
+router.put('/profile', authenticateToken, async (req, res) => {
+  try {
+    const { name, avatar, preferences } = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      req.user.userId,
+      { 
+        name, 
+        avatar, 
+        preferences,
+        updatedAt: new Date()
+      },
+      { new: true, runValidators: true }
+    ).select('-password');
 
     res.json({
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
-      }
+      message: 'Profile updated successfully',
+      user
     });
   } catch (error) {
-    res.status(401).json({ error: 'Invalid token' });
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -119,5 +141,23 @@ router.get('/me', async (req, res) => {
 router.post('/logout', (req, res) => {
   res.json({ message: 'Logout successful' });
 });
+
+// Middleware to authenticate JWT token
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(403).json({ error: 'Invalid or expired token' });
+    }
+    req.user = user;
+    next();
+  });
+}
 
 export default router;

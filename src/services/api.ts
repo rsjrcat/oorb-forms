@@ -11,7 +11,7 @@ const api = axios.create({
 
 // Add token to requests if available
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('authToken');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -22,10 +22,10 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token');
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      localStorage.removeItem('authToken');
       localStorage.removeItem('user');
-      // Optionally redirect to login
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
@@ -33,19 +33,22 @@ api.interceptors.response.use(
 
 // Auth API
 export const authAPI = {
-  // Sign up
-  signup: (userData: { name: string; email: string; password: string }) => 
-    api.post('/auth/signup', userData),
-  
   // Login
   login: (credentials: { email: string; password: string }) => 
     api.post('/auth/login', credentials),
   
-  // Get current user
-  getCurrentUser: () => api.get('/auth/me'),
+  // Register
+  register: (userData: { email: string; password: string; name: string }) => 
+    api.post('/auth/register', userData),
   
   // Logout
   logout: () => api.post('/auth/logout'),
+  
+  // Get current user
+  getCurrentUser: () => api.get('/auth/me'),
+  
+  // Update profile
+  updateProfile: (profileData: any) => api.put('/auth/profile', profileData),
 };
 
 // Form API
@@ -73,6 +76,31 @@ export const formAPI = {
   
   // Get analytics
   getAnalytics: (id: string) => api.get(`/forms/${id}/analytics`),
+
+  // Get recent forms
+  getRecentForms: (limit = 5) => api.get(`/forms?limit=${limit}&sort=updatedAt`),
+};
+
+// Folder API
+export const folderAPI = {
+  // Get all folders
+  getFolders: () => api.get('/folders'),
+  
+  // Get folder by ID with forms
+  getFolder: (id: string) => api.get(`/folders/${id}`),
+  
+  // Create folder
+  createFolder: (folderData: any) => api.post('/folders', folderData),
+  
+  // Update folder
+  updateFolder: (id: string, folderData: any) => api.put(`/folders/${id}`, folderData),
+  
+  // Delete folder
+  deleteFolder: (id: string) => api.delete(`/folders/${id}`),
+  
+  // Move forms to folder
+  moveForms: (folderId: string, formIds: string[]) => 
+    api.post(`/folders/${folderId}/move-forms`, { formIds }),
 };
 
 // Response API
@@ -105,33 +133,6 @@ export const exportAPI = {
   downloadCSV: (formId: string) => {
     window.open(`${API_BASE_URL}/exports/csv/${formId}`, '_blank');
   },
-};
-
-// Integration API
-export const integrationAPI = {
-  // Get integrations for form
-  getIntegrations: (formId: string) => api.get(`/integrations/form/${formId}`),
-  
-  // Create integration
-  createIntegration: (integrationData: any) => api.post('/integrations', integrationData),
-  
-  // Update integration
-  updateIntegration: (id: string, integrationData: any) => api.put(`/integrations/${id}`, integrationData),
-  
-  // Delete integration
-  deleteIntegration: (id: string) => api.delete(`/integrations/${id}`),
-  
-  // Test integration
-  testIntegration: (id: string) => api.post(`/integrations/${id}/test`),
-};
-
-// Template API
-export const templateAPI = {
-  // Get all templates
-  getTemplates: (category?: string) => api.get(`/templates${category ? `?category=${category}` : ''}`),
-  
-  // Get template by ID
-  getTemplate: (id: string) => api.get(`/templates/${id}`),
 };
 
 export default api;

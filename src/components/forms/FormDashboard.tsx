@@ -14,9 +14,17 @@ import {
   Calendar,
   FileText,
   Download,
-  Send
+  Send,
+  Folder,
+  FolderPlus,
+  Settings,
+  Menu,
+  Bot,
+  Image as ImageIcon,
+  Star
 } from 'lucide-react';
-import { formAPI, exportAPI } from '../../services/api';
+import { formAPI, exportAPI, folderAPI } from '../../services/api';
+import FolderModal from './FolderModal';
 import toast from 'react-hot-toast';
 
 interface FormItem {
@@ -26,8 +34,18 @@ interface FormItem {
   responses: number;
   views: number;
   createdAt: string;
-  status: 'active' | 'draft' | 'closed';
+  status: 'published' | 'draft' | 'closed';
   shareUrl?: string;
+  folderId?: string;
+}
+
+interface FolderItem {
+  _id: string;
+  name: string;
+  description: string;
+  color: string;
+  formCount: number;
+  createdAt: string;
 }
 
 interface FormDashboardProps {
@@ -42,23 +60,69 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
   onViewResponses 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'draft' | 'closed'>('all');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'published' | 'draft' | 'closed'>('all');
   const [forms, setForms] = useState<FormItem[]>([]);
+  const [folders, setFolders] = useState<FolderItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showFolderModal, setShowFolderModal] = useState(false);
+  const [selectedFolder, setSelectedFolder] = useState<FolderItem | null>(null);
 
   useEffect(() => {
-    loadForms();
+    loadData();
   }, []);
 
-  const loadForms = async () => {
+  const loadData = async () => {
     try {
-      const response = await formAPI.getForms();
-      setForms(response.data);
+      const [formsResponse, foldersResponse] = await Promise.all([
+        formAPI.getForms(),
+        folderAPI.getFolders()
+      ]);
+      setForms(formsResponse.data);
+      setFolders(foldersResponse.data);
     } catch (error) {
-      toast.error('Failed to load forms');
-      console.error('Error loading forms:', error);
+      toast.error('Failed to load data');
+      console.error('Error loading data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const createFolder = async (folderData: { name: string; description: string; color: string }) => {
+    try {
+      const response = await folderAPI.createFolder(folderData);
+      setFolders([response.data, ...folders]);
+      toast.success('Folder created successfully');
+    } catch (error) {
+      toast.error('Failed to create folder');
+      console.error('Error creating folder:', error);
+    }
+  };
+
+  const updateFolder = async (folderData: { name: string; description: string; color: string }) => {
+    if (!selectedFolder) return;
+    
+    try {
+      const response = await folderAPI.updateFolder(selectedFolder._id, folderData);
+      setFolders(folders.map(f => f._id === selectedFolder._id ? response.data : f));
+      toast.success('Folder updated successfully');
+    } catch (error) {
+      toast.error('Failed to update folder');
+      console.error('Error updating folder:', error);
+    }
+  };
+
+  const deleteFolder = async (folderId: string) => {
+    if (!confirm('Are you sure you want to delete this folder? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await folderAPI.deleteFolder(folderId);
+      setFolders(folders.filter(f => f._id !== folderId));
+      toast.success('Folder deleted successfully');
+    } catch (error) {
+      toast.error('Failed to delete folder');
+      console.error('Error deleting folder:', error);
     }
   };
 
@@ -83,31 +147,18 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
     toast.success('Share link copied to clipboard!');
   };
 
-  const downloadExcel = (formId: string) => {
-    exportAPI.downloadExcel(formId);
-    toast.success('Excel download started');
-  };
-
-  const downloadCSV = (formId: string) => {
-    exportAPI.downloadCSV(formId);
-    toast.success('CSV download started');
-  };
-
-  const filteredForms = forms.filter(form => {
+  const standaloneForms = forms.filter(form => !form.folderId);
+  const filteredStandaloneForms = standaloneForms.filter(form => {
     const matchesSearch = form.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          form.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === 'all' || form.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'published': return 'bg-green-100 text-green-800';
-      case 'draft': return 'bg-yellow-100 text-yellow-800';
-      case 'closed': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const filteredFolders = folders.filter(folder =>
+    folder.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    folder.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const totalResponses = forms.reduce((sum, form) => sum + form.responses, 0);
   const totalViews = forms.reduce((sum, form) => sum + form.views, 0);
@@ -118,106 +169,165 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading forms...</p>
+          <p className="text-gray-600">Loading dashboard...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 ">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 ">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 ">
-          <div className="flex items-center justify-between mt-14">
+      <div className="bg-white border-b border-gray-200">
+        <div className="px-6 py-6">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Forms Dashboard</h1>
-              <p className="text-gray-600 mt-1">Manage and analyze your forms</p>
             </div>
-            <button
-              onClick={onCreateForm}
-              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Create Form
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <FileText className="w-6 h-6 text-blue-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Forms</p>
-                <p className="text-2xl font-bold text-gray-900">{forms.length}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <BarChart3 className="w-6 h-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Responses</p>
-                <p className="text-2xl font-bold text-gray-900">{totalResponses}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Eye className="w-6 h-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Views</p>
-                <p className="text-2xl font-bold text-gray-900">{totalViews}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                <Send className="w-6 h-6 text-orange-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Published Forms</p>
-                <p className="text-2xl font-bold text-gray-900">{activeForms}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search forms..."
+                  placeholder="Search"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+className="pl-10 pr-4 py-2 border border-gray-300 rounded-3xl focus:ring-2 focus:ring-blue-500 focus:border-transparent w-full sm:min-w-md md:min-w-[500px] lg:min-w-[700px] bg-gray-50"
                 />
               </div>
+              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+                R
+              </div>
+
+          </div>
+        </div>
+      </div>
+
+      <div className="px-6 py-8">
+        {/* Create Form Options */}
+        <div className="mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl">
+            {/* Blank Form */}
+            <div 
+              onClick={onCreateForm}
+              className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-all cursor-pointer group"
+            >
+              <div className="flex items-start space-x-4">
+                <div className="w-20 h-24 bg-gray-100 rounded-lg border-2 border-gray-200 flex items-center justify-center group-hover:border-blue-500 transition-colors relative">
+                  <div className="absolute top-2 left-2 w-2 h-2 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <FileText className="w-10 h-10 text-gray-400 group-hover:text-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Blank Form</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Start with a blank form and add your own questions
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-400" />
+
+            {/* Create by AI */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-all cursor-pointer group">
+              <div className="flex items-start space-x-4">
+                <div className="w-20 h-24 bg-purple-50 rounded-lg border-2 border-purple-200 flex items-center justify-center group-hover:border-purple-500 transition-colors relative">
+                  <div className="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <Bot className="w-10 h-10 text-purple-400 group-hover:text-purple-500" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Create by AI</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Let AI help you create a form based on your description
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Use Template */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-all cursor-pointer group">
+              <div className="flex items-start space-x-4">
+                <div className="w-20 h-24 bg-green-50 rounded-lg border-2 border-green-200 flex items-center justify-center group-hover:border-green-500 transition-colors relative">
+                  <div className="absolute top-2 left-2 w-2 h-2 bg-green-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <ImageIcon className="w-10 h-10 text-green-400 group-hover:text-green-500" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Use Template</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Choose from pre-built templates for common use cases
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <FileText className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Total Forms</p>
+                <p className="text-2xl font-semibold text-gray-900">{forms.length}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-6 h-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Total Responses</p>
+                <p className="text-2xl font-semibold text-gray-900">{totalResponses}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Eye className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Total Views</p>
+                <p className="text-2xl font-semibold text-gray-900">{totalViews}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                <Send className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-1">Published Forms</p>
+                <p className="text-2xl font-semibold text-gray-900">{activeForms}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Your Forms Section */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-medium text-gray-900">Your Forms</h2>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => {
+                  setSelectedFolder(null);
+                  setShowFolderModal(true);
+                }}
+                className="inline-flex items-center px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                <FolderPlus className="w-4 h-4 mr-2" />
+                New Folder
+              </button>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as any)}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="px-4 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
               >
                 <option value="all">All Status</option>
                 <option value="published">Published</option>
@@ -226,110 +336,122 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
               </select>
             </div>
           </div>
-        </div>
 
-        {/* Forms List */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Your Forms</h2>
-          </div>
-          
-          <div className="divide-y divide-gray-200">
-            {filteredForms.map((form) => (
-              <div key={form._id} className="p-6 hover:bg-gray-50 transition-colors">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3 mb-2">
-                      <h3 className="text-lg font-medium text-gray-900">{form.title}</h3>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(form.status)}`}>
-                        {form.status}
-                      </span>
-                    </div>
-                    <p className="text-gray-600 mb-3">{form.description}</p>
-                    
-                    <div className="flex items-center space-x-6 text-sm text-gray-500">
-                      <div className="flex items-center space-x-1">
-                        <BarChart3 className="w-4 h-4" />
-                        <span>{form.responses} responses</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Eye className="w-4 h-4" />
-                        <span>{form.views} views</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="w-4 h-4" />
-                        <span>Created {new Date(form.createdAt).toLocaleDateString()}</span>
-                      </div>
-                    </div>
+          {/* Forms Grid */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            {/* Folders */}
+            {filteredFolders.map((folder) => (
+              <div
+                key={folder._id}
+                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all cursor-pointer group"
+              >
+                <div className="flex flex-col items-center text-center">
+                  <div 
+                    className="w-16 h-16 rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform"
+                    style={{ backgroundColor: folder.color + '20' }}
+                  >
+                    <Folder 
+                      className="w-8 h-8" 
+                      style={{ color: folder.color }}
+                    />
                   </div>
-                  
-                  <div className="flex items-center space-x-2">
+                  <h3 className="font-medium text-gray-900 text-sm mb-1 truncate w-full">
+                    {folder.name}
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    {folder.formCount} forms
+                  </p>
+                </div>
+                <div className="flex items-center justify-end mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedFolder(folder);
+                      setShowFolderModal(true);
+                    }}
+                    className="p-1 text-gray-400 hover:text-gray-600 rounded"
+                  >
+                    <Settings className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteFolder(folder._id);
+                    }}
+                    className="p-1 text-gray-400 hover:text-red-600 rounded"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {/* Standalone Forms */}
+            {filteredStandaloneForms.map((form) => (
+              <div
+                key={form._id}
+                className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-all cursor-pointer group"
+                onClick={() => onEditForm(form._id)}
+              >
+                <div className="flex flex-col items-center text-center">
+                  <div className="w-16 h-16 bg-blue-50 rounded-lg flex items-center justify-center mb-3 group-hover:scale-105 transition-transform">
+                    <FileText className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <h3 className="font-medium text-gray-900 text-sm mb-2 truncate w-full">
+                    {form.title}
+                  </h3>
+                  <div className="flex items-center space-x-2 text-xs text-gray-500 mb-2">
+                    <span>{form.responses} responses</span>
+                    <span>•</span>
+                    <span>{form.views} views</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center space-x-1">
                     <button
-                      onClick={() => onEditForm(form._id)}
-                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
-                      title="Edit form"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    
-                    <button
-                      onClick={() => onViewResponses(form._id)}
-                      className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewResponses(form._id);
+                      }}
+                      className="p-1 text-gray-400 hover:text-gray-600 rounded"
                       title="View responses"
                     >
                       <BarChart3 className="w-4 h-4" />
                     </button>
-                    
                     {form.status === 'published' && form.shareUrl && (
                       <button
-                        onClick={() => copyShareLink(form.shareUrl!)}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copyShareLink(form.shareUrl!);
+                        }}
+                        className="p-1 text-gray-400 hover:text-gray-600 rounded"
                         title="Copy share link"
                       >
                         <Share2 className="w-4 h-4" />
                       </button>
                     )}
-                    
-                    {form.responses > 0 && (
-                      <div className="relative group">
-                        <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-md">
-                          <Download className="w-4 h-4" />
-                        </button>
-                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                          <button
-                            onClick={() => downloadExcel(form._id)}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          >
-                            Download Excel
-                          </button>
-                          <button
-                            onClick={() => downloadCSV(form._id)}
-                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                          >
-                            Download CSV
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <button
-                      onClick={() => deleteForm(form._id)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md"
-                      title="Delete form"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteForm(form._id);
+                    }}
+                    className="p-1 text-gray-400 hover:text-red-600 rounded"
+                    title="Delete form"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             ))}
           </div>
-          
-          {filteredForms.length === 0 && (
-            <div className="text-center py-12">
-              <FileText className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No forms found</h3>
-              <p className="text-gray-600 mb-4">
+
+          {/* Empty State */}
+          {filteredFolders.length === 0 && filteredStandaloneForms.length === 0 && (
+            <div className="text-center py-16">
+              <FileText className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No forms or folders found</h3>
+              <p className="text-gray-600 mb-6">
                 {searchTerm || filterStatus !== 'all' 
                   ? 'Try adjusting your search or filter criteria'
                   : 'Get started by creating your first form'
@@ -338,9 +460,9 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
               {!searchTerm && filterStatus === 'all' && (
                 <button
                   onClick={onCreateForm}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
+                  <Plus className="w-5 h-5 mr-2" />
                   Create Your First Form
                 </button>
               )}
@@ -348,6 +470,22 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
           )}
         </div>
       </div>
+
+      {/* Folder Modal */}
+      <FolderModal
+        isOpen={showFolderModal}
+        onClose={() => {
+          setShowFolderModal(false);
+          setSelectedFolder(null);
+        }}
+        onSubmit={selectedFolder ? updateFolder : createFolder}
+        title={selectedFolder ? 'Edit Folder' : 'Create New Folder'}
+        initialData={selectedFolder ? {
+          name: selectedFolder.name,
+          description: selectedFolder.description,
+          color: selectedFolder.color
+        } : undefined}
+      />
     </div>
   );
 };

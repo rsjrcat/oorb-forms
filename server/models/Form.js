@@ -14,8 +14,7 @@ const fieldSchema = new mongoose.Schema({
   validation: {
     minLength: Number,
     maxLength: Number,
-    pattern: String,
-    errorMessage: String
+    pattern: String
   }
 });
 
@@ -23,14 +22,18 @@ const formSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: String,
   fields: [fieldSchema],
+  folderId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Folder',
+    default: null // null means standalone form
+  },
   settings: {
     allowMultipleResponses: { type: Boolean, default: true },
     requireLogin: { type: Boolean, default: false },
     showProgressBar: { type: Boolean, default: true },
     customTheme: {
       primaryColor: { type: String, default: '#3B82F6' },
-      backgroundColor: { type: String, default: '#FFFFFF' },
-      fontFamily: { type: String, default: 'Inter' }
+      backgroundColor: { type: String, default: '#FFFFFF' }
     }
   },
   status: { 
@@ -41,7 +44,7 @@ const formSchema = new mongoose.Schema({
   shareUrl: { type: String, unique: true },
   createdBy: { 
     type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User', 
+    ref: 'User',
     required: true 
   },
   createdAt: { type: Date, default: Date.now },
@@ -50,17 +53,7 @@ const formSchema = new mongoose.Schema({
   // Analytics
   views: { type: Number, default: 0 },
   responses: { type: Number, default: 0 },
-  completionRate: { type: Number, default: 0 },
-  
-  // Conditional Logic
-  conditionalRules: [{
-    id: String,
-    fieldId: String,
-    condition: { type: String, enum: ['equals', 'not_equals', 'contains', 'greater_than', 'less_than'] },
-    value: String,
-    action: { type: String, enum: ['show', 'hide', 'require', 'skip_to'] },
-    targetFieldId: String
-  }]
+  completionRate: { type: Number, default: 0 }
 });
 
 // Generate unique share URL before saving

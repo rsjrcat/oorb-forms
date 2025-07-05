@@ -1,18 +1,42 @@
 import React, { useState } from 'react';
 import { Toaster } from 'react-hot-toast';
 import FormDashboard from './FormDashboard';
-import EnhancedFormBuilder from './EnhancedFormBuilder';
+import FormBuilder from './FormBuilder';
 import ResponseViewer from './ResponseViewer';
+import FormCreationModal from './FormCreationModal';
+import Sidebar from './Sidebar';
+import { formAPI } from '../../services/api';
+import toast from 'react-hot-toast';
 
 type View = 'dashboard' | 'builder' | 'responses';
 
 const EnhancedOorbFormsApp: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [currentFormId, setCurrentFormId] = useState<string | null>(null);
+  const [showFormCreationModal, setShowFormCreationModal] = useState(false);
 
   const handleCreateForm = () => {
-    setCurrentFormId(null);
-    setCurrentView('builder');
+    setShowFormCreationModal(true);
+  };
+
+  const handleFormCreation = async (data: { title: string; description: string; folderId?: string }) => {
+    try {
+      const formData = {
+        title: data.title,
+        description: data.description,
+        folderId: data.folderId || null,
+        fields: [],
+        status: 'draft'
+      };
+      
+      const response = await formAPI.createForm(formData);
+      setCurrentFormId(response.data._id);
+      setCurrentView('builder');
+      toast.success('Form created successfully!');
+    } catch (error) {
+      toast.error('Failed to create form');
+      console.error('Error creating form:', error);
+    }
   };
 
   const handleEditForm = (formId: string) => {
@@ -34,21 +58,32 @@ const EnhancedOorbFormsApp: React.FC = () => {
     switch (currentView) {
       case 'dashboard':
         return (
-          <FormDashboard 
-            onCreateForm={handleCreateForm}
-            onEditForm={handleEditForm}
-            onViewResponses={handleViewResponses}
-          />
+          <div className="flex min-h-screen bg-gray-50">
+            {/* Sidebar */}
+            <Sidebar
+              onCreateForm={handleCreateForm}
+              onEditForm={handleEditForm}
+              currentView={currentView}
+              onNavigate={setCurrentView}
+            />
+            
+            {/* Main Content */}
+            <div className="flex-1">
+              <FormDashboard 
+                onCreateForm={handleCreateForm}
+                onEditForm={handleEditForm}
+                onViewResponses={handleViewResponses}
+              />
+            </div>
+          </div>
         );
       
       case 'builder':
         return (
-          <div className='mt-14'>
-            <EnhancedFormBuilder 
-              formId={currentFormId || undefined}
-              onBack={handleBackToDashboard}
-            />
-          </div>
+          <FormBuilder 
+            formId={currentFormId || undefined}
+            onBack={handleBackToDashboard}
+          />
         );
       
       case 'responses':
@@ -61,11 +96,25 @@ const EnhancedOorbFormsApp: React.FC = () => {
       
       default:
         return (
-          <FormDashboard 
-            onCreateForm={handleCreateForm}
-            onEditForm={handleEditForm}
-            onViewResponses={handleViewResponses}
-          />
+          <div className="flex min-h-screen bg-gray-50">
+            {/* Sidebar */}
+            <Sidebar
+              onCreateForm={handleCreateForm}
+              onEditForm={handleEditForm}
+              currentView={currentView}
+              onNavigate={setCurrentView}
+            />
+            
+            
+            {/* Main Content */}
+            <div className="flex-1">
+              <FormDashboard 
+                onCreateForm={handleCreateForm}
+                onEditForm={handleEditForm}
+                onViewResponses={handleViewResponses}
+              />
+            </div>
+          </div>
         );
     }
   };
@@ -73,6 +122,14 @@ const EnhancedOorbFormsApp: React.FC = () => {
   return (
     <>
       {renderCurrentView()}
+
+      {/* Form Creation Modal */}
+      <FormCreationModal
+        isOpen={showFormCreationModal}
+        onClose={() => setShowFormCreationModal(false)}
+        onSubmit={handleFormCreation}
+      />
+
       <Toaster 
         position="top-right"
         toastOptions={{

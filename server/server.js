@@ -5,8 +5,7 @@ import dotenv from 'dotenv';
 import formRoutes from './routes/forms.js';
 import responseRoutes from './routes/responses.js';
 import exportRoutes from './routes/exports.js';
-import integrationRoutes from './routes/integrations.js';
-import templateRoutes from './routes/templates.js';
+import folderRoutes from './routes/folders.js';
 import authRoutes from './routes/auth.js';
 
 dotenv.config();
@@ -20,16 +19,15 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
-app.use('/api/auth', authRoutes);
 app.use('/api/forms', formRoutes);
 app.use('/api/responses', responseRoutes);
 app.use('/api/exports', exportRoutes);
-app.use('/api/integrations', integrationRoutes);
-app.use('/api/templates', templateRoutes);
+app.use('/api/folders', folderRoutes);
+app.use('/api/auth', authRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Enhanced OORB Forms API with Authentication is running' });
+  res.json({ status: 'OK', message: 'OORB Forms API is running' });
 });
 
 // MongoDB Connection
@@ -37,8 +35,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/oorb-form
   .then(() => {
     console.log('✅ Connected to MongoDB');
     app.listen(PORT, () => {
-      console.log(`🚀 Enhanced OORB Forms Server running on port ${PORT}`);
-      console.log(`📊 Features: AI Builder, Templates, Integrations, Analytics, Authentication`);
+      console.log(`🚀 Server running on port ${PORT}`);
     });
   })
   .catch((error) => {
