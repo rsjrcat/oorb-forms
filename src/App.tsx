@@ -7,6 +7,7 @@ import OorbFormsApp from './components/forms/OorbFormsApp';
 import FormRenderer from './components/forms/FormRenderer';
 import LoginPage from './components/auth/LoginPage';
 import RegisterPage from './components/auth/RegisterPage';
+import EnhancedOorbFormsApp from './components/forms/EnhancedOorbFormsApp';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -74,7 +75,7 @@ const AppRoutes: React.FC = () => {
         {/* Protected routes */}
         <Route path="/oorb-forms" element={
           <ProtectedRoute>
-            <OorbFormsApp />
+            <EnhancedOorbFormsApp />
           </ProtectedRoute>
         } />
         

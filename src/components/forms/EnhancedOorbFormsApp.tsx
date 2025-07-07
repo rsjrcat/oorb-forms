@@ -57,18 +57,21 @@ const EnhancedOorbFormsApp: React.FC = () => {
   const renderCurrentView = () => {
     switch (currentView) {
       case 'dashboard':
+        
         return (
           <div className="flex min-h-screen bg-gray-50">
-            {/* Sidebar */}
-            <Sidebar
-              onCreateForm={handleCreateForm}
-              onEditForm={handleEditForm}
-              currentView={currentView}
-              onNavigate={setCurrentView}
-            />
+            {/* Fixed Sidebar */}
+            <div className="fixed left-0 top-0 h-full z-10">
+              <Sidebar
+                onCreateForm={handleCreateForm}
+                onEditForm={handleEditForm}
+                currentView={currentView}
+                onNavigate={setCurrentView}
+              />
+            </div>
             
-            {/* Main Content */}
-            <div className="flex-1">
+            {/* Main Content with left margin to account for fixed sidebar */}
+            <div className="flex-1 ml-64">
               <FormDashboard 
                 onCreateForm={handleCreateForm}
                 onEditForm={handleEditForm}

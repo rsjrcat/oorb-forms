@@ -49,8 +49,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const loadRecentForms = async () => {
     try {
-      const response = await formAPI.getRecentForms(5);
-      setRecentForms(response.data.slice(0, 5));
+      const response = await formAPI.getRecentForms(20); // Get more forms to fill groups
+      setRecentForms(response.data);
     } catch (error) {
       console.error('Error loading recent forms:', error);
     } finally {
@@ -73,9 +73,70 @@ const Sidebar: React.FC<SidebarProps> = ({
     }
   };
 
+  const getTimeCategory = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    // Check if it's today
+    if (date.toDateString() === now.toDateString()) {
+      return 'today';
+    }
+
+    // Check if it's yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+      return 'yesterday';
+    }
+
+    // Check if it's within last 7 days
+    if (diffDays <= 7) {
+      return 'last7days';
+    }
+
+    // Check if it's within last 30 days
+    if (diffDays <= 30) {
+      return 'lastMonth';
+    }
+
+    return 'older';
+  };
+
+  const groupFormsByTime = (forms: RecentForm[]) => {
+    const groups: { [key: string]: RecentForm[] } = {
+      today: [],
+      yesterday: [],
+      last7days: [],
+      lastMonth: [],
+      older: []
+    };
+
+    forms.forEach(form => {
+      const category = getTimeCategory(form.updatedAt);
+      groups[category].push(form);
+    });
+
+    return groups;
+  };
+
+  const getGroupTitle = (groupKey: string) => {
+    switch (groupKey) {
+      case 'today': return 'Today';
+      case 'yesterday': return 'Yesterday';
+      case 'last7days': return 'Last 7 days';
+      case 'lastMonth': return 'Last month';
+      case 'older': return 'Older';
+      default: return '';
+    }
+  };
+
   const filteredForms = recentForms.filter(form =>
     form.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const groupedForms = groupFormsByTime(filteredForms);
 
   if (!user) {
     return (
@@ -223,31 +284,41 @@ const Sidebar: React.FC<SidebarProps> = ({
             ))}
           </div>
         ) : filteredForms.length > 0 ? (
-          <div className="space-y-2">
-            {filteredForms.map((form) => (
-              <button
-                key={form._id}
-                onClick={() => onEditForm(form._id)}
-                className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors group"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-600">
-                      {form.title}
-                    </p>
-                    <div className="flex items-center space-x-2 mt-1">
-                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(form.status)}`}>
-                        {form.status}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {new Date(form.updatedAt).toLocaleDateString()}
-                      </span>
-                    </div>
+          <div className="space-y-4">
+            {Object.entries(groupedForms).map(([groupKey, forms]) => {
+              if (forms.length === 0) return null;
+              
+              return (
+                <div key={groupKey} className="space-y-2">
+                  <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider px-2">
+                    {getGroupTitle(groupKey)}
+                  </h4>
+                  <div className="space-y-1">
+                    {forms.map((form) => (
+                      <button
+                        key={form._id}
+                        onClick={() => onEditForm(form._id)}
+                        className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-600">
+                              {form.title}
+                            </p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(form.status)}`}>
+                                {form.status}
+                              </span>
+                            </div>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                  <ChevronRight className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="text-center py-8">

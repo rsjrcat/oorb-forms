@@ -17,10 +17,23 @@ import {
   Save,
   Share2,
   ArrowLeft,
-  Send
+  Send,
+  Sparkles,
+  Palette,
+  Code,
+  Zap,
+  BarChart3,
+  GitBranch
 } from 'lucide-react';
 import { formAPI } from '../../services/api';
 import toast from 'react-hot-toast';
+import AIFormBuilder from './AIFormBuilder';
+import TemplateLibrary from './TemplateLibrary';
+import EmbedCodeGenerator from './EmbedCodeGenerator';
+import IntegrationsPanel from './IntegrationsPanel';
+import ConditionalLogic from './ConditionalLogic';
+import AdvancedValidation from './AdvancedValidation';
+import FormAnalytics from './FormAnalytics';
 
 interface FormField {
   id: string;
@@ -29,6 +42,7 @@ interface FormField {
   placeholder?: string;
   required: boolean;
   options?: string[];
+  validation?: any;
 }
 
 interface Form {
@@ -38,25 +52,43 @@ interface Form {
   fields: FormField[];
   status: 'draft' | 'published' | 'closed';
   shareUrl?: string;
+  conditionalRules?: any[];
+  theme?: {
+    primaryColor: string;
+    backgroundColor: string;
+    fontFamily: string;
+  };
 }
 
-interface FormBuilderProps {
+interface EnhancedFormBuilderProps {
   formId?: string;
   onBack: () => void;
 }
 
-const FormBuilder: React.FC<FormBuilderProps> = ({ formId, onBack }) => {
+const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBack }) => {
   const [form, setForm] = useState<Form>({
     title: 'Untitled Form',
     description: 'Form description',
     fields: [],
-    status: 'draft'
+    status: 'draft',
+    conditionalRules: [],
+    theme: {
+      primaryColor: '#3B82F6',
+      backgroundColor: '#FFFFFF',
+      fontFamily: 'Inter'
+    }
   });
   
   const [selectedField, setSelectedField] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [showAIBuilder, setShowAIBuilder] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showEmbedCode, setShowEmbedCode] = useState(false);
+  const [showIntegrations, setShowIntegrations] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [activeTab, setActiveTab] = useState<'fields' | 'logic' | 'design' | 'settings'>('fields');
 
   const fieldTypes = [
     { type: 'text', label: 'Text Input', icon: Type },
@@ -95,7 +127,8 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ formId, onBack }) => {
       label: `${fieldTypes.find(ft => ft.type === type)?.label} Field`,
       placeholder: type === 'textarea' ? 'Enter your answer here...' : 'Enter your answer',
       required: false,
-      options: ['radio', 'checkbox', 'select'].includes(type) ? ['Option 1', 'Option 2'] : undefined
+      options: ['radio', 'checkbox', 'select'].includes(type) ? ['Option 1', 'Option 2'] : undefined,
+      validation: {}
     };
     
     setForm(prev => ({
@@ -188,6 +221,27 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ formId, onBack }) => {
     }
   };
 
+  const handleAIFormGenerated = (generatedForm: any) => {
+    setForm(prev => ({
+      ...prev,
+      ...generatedForm,
+      fields: generatedForm.fields.map((field: any, index: number) => ({
+        ...field,
+        id: `field_${Date.now()}_${index}`
+      }))
+    }));
+    setShowAIBuilder(false);
+    toast.success('AI form generated successfully!');
+  };
+
+  const handleTemplateSelected = (template: any) => {
+    setForm(prev => ({
+      ...prev,
+      ...template
+    }));
+    setShowTemplates(false);
+  };
+
   const renderFieldPreview = (field: FormField) => {
     const baseClasses = "w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent";
     
@@ -226,7 +280,7 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ formId, onBack }) => {
       
       case 'radio':
         return (
-          <div className="space-y-2 ">
+          <div className="space-y-2">
             {field.options?.map((option, index) => (
               <label key={index} className="flex items-center space-x-2">
                 <input type="radio" name={field.id} value={option} disabled={!previewMode} />
@@ -259,7 +313,7 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ formId, onBack }) => {
       
       case 'file':
         return (
-          <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center ">
+          <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center">
             <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
             <p className="text-gray-600">Click to upload or drag and drop</p>
           </div>
@@ -284,7 +338,7 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ formId, onBack }) => {
     if (!field) return null;
 
     return (
-      <div className="bg-white border-l border-gray-200 p-6 w-80 ">
+      <div className="bg-white border-l border-gray-200 p-6 w-80">
         <h3 className="text-lg font-semibold mb-4">Field Settings</h3>
         
         <div className="space-y-4">
@@ -368,6 +422,12 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ formId, onBack }) => {
               Required field
             </label>
           </div>
+
+          {/* Advanced Validation */}
+          <AdvancedValidation
+            field={field}
+            onValidationChange={(validation) => updateField(field.id, { validation })}
+          />
           
           <button
             onClick={() => deleteField(field.id)}
@@ -379,6 +439,88 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ formId, onBack }) => {
       </div>
     );
   };
+
+  const renderDesignTab = () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Theme Customization</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Primary Color
+            </label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="color"
+                value={form.theme?.primaryColor || '#3B82F6'}
+                onChange={(e) => setForm(prev => ({
+                  ...prev,
+                  theme: { ...prev.theme!, primaryColor: e.target.value }
+                }))}
+                className="w-12 h-10 border border-gray-300 rounded-md"
+              />
+              <input
+                type="text"
+                value={form.theme?.primaryColor || '#3B82F6'}
+                onChange={(e) => setForm(prev => ({
+                  ...prev,
+                  theme: { ...prev.theme!, primaryColor: e.target.value }
+                }))}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Background Color
+            </label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="color"
+                value={form.theme?.backgroundColor || '#FFFFFF'}
+                onChange={(e) => setForm(prev => ({
+                  ...prev,
+                  theme: { ...prev.theme!, backgroundColor: e.target.value }
+                }))}
+                className="w-12 h-10 border border-gray-300 rounded-md"
+              />
+              <input
+                type="text"
+                value={form.theme?.backgroundColor || '#FFFFFF'}
+                onChange={(e) => setForm(prev => ({
+                  ...prev,
+                  theme: { ...prev.theme!, backgroundColor: e.target.value }
+                }))}
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Font Family
+          </label>
+          <select
+            value={form.theme?.fontFamily || 'Inter'}
+            onChange={(e) => setForm(prev => ({
+              ...prev,
+              theme: { ...prev.theme!, fontFamily: e.target.value }
+            }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          >
+            <option value="Inter">Inter</option>
+            <option value="Roboto">Roboto</option>
+            <option value="Open Sans">Open Sans</option>
+            <option value="Lato">Lato</option>
+            <option value="Poppins">Poppins</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  );
 
   if (previewMode) {
     return (
@@ -438,6 +580,27 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ formId, onBack }) => {
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Dashboard</span>
           </button>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="mb-6">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Start</h3>
+          <div className="space-y-2">
+            <button
+              onClick={() => setShowAIBuilder(true)}
+              className="w-full flex items-center space-x-2 px-3 py-2 text-left hover:bg-purple-50 rounded-md transition-colors text-purple-700"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span className="text-sm">AI Form Builder</span>
+            </button>
+            <button
+              onClick={() => setShowTemplates(true)}
+              className="w-full flex items-center space-x-2 px-3 py-2 text-left hover:bg-blue-50 rounded-md transition-colors text-blue-700"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="text-sm">Use Template</span>
+            </button>
+          </div>
         </div>
         
         <h2 className="text-lg font-semibold mb-4">Add Fields</h2>
@@ -503,107 +666,254 @@ const FormBuilder: React.FC<FormBuilderProps> = ({ formId, onBack }) => {
                 <span>{publishing ? 'Publishing...' : 'Publish'}</span>
               </button>
               {form.status === 'published' && form.shareUrl && (
-                <button
-                  onClick={copyShareLink}
-                  className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
-                >
-                  <Share2 className="w-4 h-4" />
-                  <span>Share</span>
-                </button>
+                <>
+                  <button
+                    onClick={copyShareLink}
+                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                  >
+                    <Share2 className="w-4 h-4" />
+                    <span>Share</span>
+                  </button>
+                  <button
+                    onClick={() => setShowEmbedCode(true)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                  >
+                    <Code className="w-4 h-4" />
+                    <span>Embed</span>
+                  </button>
+                  <button
+                    onClick={() => setShowIntegrations(true)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+                  >
+                    <Zap className="w-4 h-4" />
+                    <span>Integrations</span>
+                  </button>
+                  <button
+                    onClick={() => setShowAnalytics(true)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                  >
+                    <BarChart3 className="w-4 h-4" />
+                    <span>Analytics</span>
+                  </button>
+                </>
               )}
             </div>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="bg-white border-b border-gray-200 px-6">
+          <div className="flex space-x-8">
+            {[
+              { id: 'fields', label: 'Fields', icon: Type },
+              { id: 'logic', label: 'Logic', icon: GitBranch },
+              { id: 'design', label: 'Design', icon: Palette },
+              { id: 'settings', label: 'Settings', icon: Settings }
+            ].map(tab => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex items-center space-x-2 px-1 py-4 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
         <div className="flex-1 flex">
           {/* Form Builder */}
           <div className="flex-1 p-6">
-            <div className="max-w-2xl mx-auto">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-                <div className="mb-8">
-                  <input
-                    type="text"
-                    value={form.title}
-                    onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
-                    className="text-2xl font-bold text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 w-full"
-                    placeholder="Form Title"
-                  />
-                  <textarea
-                    value={form.description}
-                    onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
-                    className="text-gray-600 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 w-full mt-2 resize-none"
-                    placeholder="Form description"
-                    rows={2}
-                  />
-                </div>
+            {activeTab === 'fields' && (
+              <div className="max-w-2xl mx-auto">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+                  <div className="mb-8">
+                    <input
+                      type="text"
+                      value={form.title}
+                      onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
+                      className="text-2xl font-bold text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 w-full"
+                      placeholder="Form Title"
+                    />
+                    <textarea
+                      value={form.description}
+                      onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+                      className="text-gray-600 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 w-full mt-2 resize-none"
+                      placeholder="Form description"
+                      rows={2}
+                    />
+                  </div>
 
-                <DragDropContext onDragEnd={onDragEnd}>
-                  <Droppable droppableId="form-fields">
-                    {(provided) => (
-                      <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-                        {form.fields.map((field, index) => (
-                          <Draggable key={field.id} draggableId={field.id} index={index}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                className={`border rounded-lg p-4 bg-white transition-all ${
-                                  selectedField === field.id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
-                                } ${snapshot.isDragging ? 'shadow-lg' : ''}`}
-                                onClick={() => setSelectedField(field.id)}
-                              >
-                                <div className="flex items-center justify-between mb-3">
-                                  <div {...provided.dragHandleProps} className="cursor-move">
-                                    <div className="flex space-x-1">
-                                      <div className="w-1 h-4 bg-gray-300 rounded"></div>
-                                      <div className="w-1 h-4 bg-gray-300 rounded"></div>
+                  <DragDropContext onDragEnd={onDragEnd}>
+                    <Droppable droppableId="form-fields">
+                      {(provided) => (
+                        <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
+                          {form.fields.map((field, index) => (
+                            <Draggable key={field.id} draggableId={field.id} index={index}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className={`border rounded-lg p-4 bg-white transition-all ${
+                                    selectedField === field.id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
+                                  } ${snapshot.isDragging ? 'shadow-lg' : ''}`}
+                                  onClick={() => setSelectedField(field.id)}
+                                >
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div {...provided.dragHandleProps} className="cursor-move">
+                                      <div className="flex space-x-1">
+                                        <div className="w-1 h-4 bg-gray-300 rounded"></div>
+                                        <div className="w-1 h-4 bg-gray-300 rounded"></div>
+                                      </div>
                                     </div>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedField(field.id);
+                                      }}
+                                      className="p-1 text-gray-400 hover:text-gray-600"
+                                    >
+                                      <Settings className="w-4 h-4" />
+                                    </button>
                                   </div>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setSelectedField(field.id);
-                                    }}
-                                    className="p-1 text-gray-400 hover:text-gray-600"
-                                  >
-                                    <Settings className="w-4 h-4" />
-                                  </button>
+                                  
+                                  <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                      {field.label}
+                                      {field.required && <span className="text-red-500 ml-1">*</span>}
+                                    </label>
+                                    {renderFieldPreview(field)}
+                                  </div>
                                 </div>
-                                
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    {field.label}
-                                    {field.required && <span className="text-red-500 ml-1">*</span>}
-                                  </label>
-                                  {renderFieldPreview(field)}
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                        
-                        {form.fields.length === 0 && (
-                          <div className="text-center py-12 text-gray-500">
-                            <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                            <p>No fields added yet</p>
-                            <p className="text-sm">Add fields from the sidebar to get started</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </Droppable>
-                </DragDropContext>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                          
+                          {form.fields.length === 0 && (
+                            <div className="text-center py-12 text-gray-500">
+                              <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                              <p>No fields added yet</p>
+                              <p className="text-sm">Add fields from the sidebar to get started</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+                </div>
               </div>
-            </div>
+            )}
+
+            {activeTab === 'logic' && (
+              <div className="max-w-4xl mx-auto">
+                <ConditionalLogic
+                  fields={form.fields}
+                  rules={form.conditionalRules || []}
+                  onRulesChange={(rules) => setForm(prev => ({ ...prev, conditionalRules: rules }))}
+                />
+              </div>
+            )}
+
+            {activeTab === 'design' && (
+              <div className="max-w-2xl mx-auto">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+                  {renderDesignTab()}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'settings' && (
+              <div className="max-w-2xl mx-auto">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+                  <h3 className="text-lg font-semibold mb-4">Form Settings</h3>
+                  <div className="space-y-4">
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="allowMultiple"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label htmlFor="allowMultiple" className="text-sm font-medium text-gray-700">
+                        Allow multiple responses from same user
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="requireLogin"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label htmlFor="requireLogin" className="text-sm font-medium text-gray-700">
+                        Require login to submit
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="showProgress"
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                      />
+                      <label htmlFor="showProgress" className="text-sm font-medium text-gray-700">
+                        Show progress bar
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Field Editor */}
-          {selectedField && renderFieldEditor()}
+          {activeTab === 'fields' && selectedField && renderFieldEditor()}
         </div>
       </div>
+
+      {/* Modals */}
+      {showAIBuilder && (
+        <AIFormBuilder
+          onFormGenerated={handleAIFormGenerated}
+          onClose={() => setShowAIBuilder(false)}
+        />
+      )}
+
+      {showTemplates && (
+        <TemplateLibrary
+          onSelectTemplate={handleTemplateSelected}
+          onClose={() => setShowTemplates(false)}
+        />
+      )}
+
+      {showEmbedCode && form.shareUrl && (
+        <EmbedCodeGenerator
+          form={form}
+          onClose={() => setShowEmbedCode(false)}
+        />
+      )}
+
+      {showIntegrations && form._id && (
+        <IntegrationsPanel
+          formId={form._id}
+          onClose={() => setShowIntegrations(false)}
+        />
+      )}
+
+      {showAnalytics && form._id && (
+        <FormAnalytics
+          formId={form._id}
+          onClose={() => setShowAnalytics(false)}
+        />
+      )}
     </div>
   );
 };
 
-export default FormBuilder;
+export default EnhancedFormBuilder;
