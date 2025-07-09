@@ -318,11 +318,11 @@ const Sidebar: React.FC<SidebarProps> = ({
                             <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-600">
                               {form.title}
                             </p>
-                            <div className="flex items-center space-x-2 mt-1">
+                            {/* <div className="flex items-center space-x-2 mt-1">
                               <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(form.status)}`}>
                                 {form.status}
                               </span>
-                            </div>
+                            </div> */}
                           </div>
                           <ChevronRight className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>

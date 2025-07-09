@@ -7,6 +7,7 @@ import FormCreationModal from './FormCreationModal';
 import Sidebar from './Sidebar';
 import { formAPI } from '../../services/api';
 import toast from 'react-hot-toast';
+import EnhancedFormBuilder from './EnhancedFormBuilder';
 
 type View = 'dashboard' | 'builder' | 'responses';
 
@@ -110,7 +111,7 @@ const EnhancedOorbFormsApp: React.FC = () => {
       
       case 'builder':
         return (
-          <FormBuilder 
+          <EnhancedFormBuilder 
             formId={currentFormId || undefined}
             onBack={handleBackToDashboard}
           />
