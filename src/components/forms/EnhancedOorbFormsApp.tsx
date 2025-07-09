@@ -14,6 +14,17 @@ const EnhancedOorbFormsApp: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [currentFormId, setCurrentFormId] = useState<string | null>(null);
   const [showFormCreationModal, setShowFormCreationModal] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [sidebarMinimized, setSidebarMinimized] = useState(false);
+
+  React.useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleCreateForm = () => {
     setShowFormCreationModal(true);
@@ -54,24 +65,40 @@ const EnhancedOorbFormsApp: React.FC = () => {
     setCurrentFormId(null);
   };
 
+  const handleSidebarToggle = (minimized: boolean) => {
+    setSidebarMinimized(minimized);
+  };
+
+  const getSidebarWidth = () => {
+    if (isMobile) return 0;
+    return sidebarMinimized ? 64 : 256; // 16 for minimized, 64 for full (in pixels)
+  };
+
   const renderCurrentView = () => {
     switch (currentView) {
       case 'dashboard':
-        
         return (
           <div className="flex min-h-screen bg-gray-50">
-            {/* Fixed Sidebar */}
-            <div className="fixed left-0 top-0 h-full z-10">
-              <Sidebar
-                onCreateForm={handleCreateForm}
-                onEditForm={handleEditForm}
-                currentView={currentView}
-                onNavigate={setCurrentView}
-              />
-            </div>
+            {/* Sidebar - Hidden on mobile when in dashboard view */}
+            {!isMobile && (
+              <div className="fixed left-0 top-0 h-full z-10">
+                <Sidebar
+                  onCreateForm={handleCreateForm}
+                  onEditForm={handleEditForm}
+                  currentView={currentView}
+                  onNavigate={setCurrentView}
+                  onToggle={handleSidebarToggle}
+                />
+              </div>
+            )}
             
-            {/* Main Content with left margin to account for fixed sidebar */}
-            <div className="flex-1 ml-64">
+            {/* Main Content with dynamic margin based on sidebar state */}
+            <div 
+              className="flex-1 transition-all duration-300"
+              style={{ 
+                marginLeft: !isMobile ? `${getSidebarWidth()}px` : '0px' 
+              }}
+            >
               <FormDashboard 
                 onCreateForm={handleCreateForm}
                 onEditForm={handleEditForm}
@@ -100,17 +127,24 @@ const EnhancedOorbFormsApp: React.FC = () => {
       default:
         return (
           <div className="flex min-h-screen bg-gray-50">
-            {/* Sidebar */}
-            <Sidebar
-              onCreateForm={handleCreateForm}
-              onEditForm={handleEditForm}
-              currentView={currentView}
-              onNavigate={setCurrentView}
-            />
+            {!isMobile && (
+              <div className="fixed left-0 top-0 h-full z-10">
+                <Sidebar
+                  onCreateForm={handleCreateForm}
+                  onEditForm={handleEditForm}
+                  currentView={currentView}
+                  onNavigate={setCurrentView}
+                  onToggle={handleSidebarToggle}
+                />
+              </div>
+            )}
             
-            
-            {/* Main Content */}
-            <div className="flex-1">
+            <div 
+              className="flex-1 transition-all duration-300"
+              style={{ 
+                marginLeft: !isMobile ? `${getSidebarWidth()}px` : '0px' 
+              }}
+            >
               <FormDashboard 
                 onCreateForm={handleCreateForm}
                 onEditForm={handleEditForm}

@@ -51,6 +51,7 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -259,6 +260,15 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
     logout();
   };
 
+  const getStatusDotColor = (status: string) => {
+    switch (status) {
+      case 'published': return 'bg-green-500';
+      case 'draft': return 'bg-yellow-500';
+      case 'closed': return 'bg-red-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
   const standaloneForms = forms.filter(form => !form.folderId);
   const filteredStandaloneForms = standaloneForms.filter(form => {
     const matchesSearch = form.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -299,27 +309,34 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
       >
         <div className="flex flex-col items-center text-center space-y-2">
           {/* Icon */}
-          <div className="w-16 h-16 flex items-center justify-center">
+          <div className="w-12 h-12 sm:w-16 sm:h-16 flex items-center justify-center relative">
             {isFolder ? (
               <div 
-                className="w-14 h-14 rounded-lg flex items-center justify-center"
+                className="w-10 h-10 sm:w-14 sm:h-14 rounded-lg flex items-center justify-center"
                 style={{ backgroundColor: (item as FolderItem).color + '20' }}
               >
                 <Folder 
-                  className="w-10 h-10" 
+                  className="w-6 h-6 sm:w-10 sm:h-10" 
                   style={{ color: (item as FolderItem).color }}
                 />
               </div>
             ) : (
-              <div className="w-14 h-14 bg-blue-50 rounded-lg flex items-center justify-center">
-                <FileText className="w-8 h-8 text-blue-600" />
-              </div>
+              <>
+                <div className="w-10 h-10 sm:w-14 sm:h-14 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <FileText className="w-6 h-6 sm:w-8 sm:h-8 text-blue-600" />
+                </div>
+                {/* Status Dot */}
+                <div 
+                  className={`absolute -top-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${getStatusDotColor((item as FormItem).status)}`}
+                  title={`Status: ${(item as FormItem).status}`}
+                />
+              </>
             )}
           </div>
 
           {/* Name */}
           <div className="w-full">
-            <p className="text-sm font-medium text-gray-900 truncate">
+            <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
               {isFolder ? (item as FolderItem).name : (item as FormItem).title}
             </p>
             {isFolder ? (
@@ -327,16 +344,9 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
                 {(item as FolderItem).formCount} items
               </p>
             ) : (
-              <div className="flex items-center justify-center space-x-1 text-xs text-gray-500">
-                <span>{(item as FormItem).responses || 0} responses</span>
-                <span className={`px-1.5 py-0.5 rounded-full text-xs ${
-                  (item as FormItem).status === 'published' ? 'bg-green-100 text-green-700' :
-                  (item as FormItem).status === 'draft' ? 'bg-yellow-100 text-yellow-700' :
-                  'bg-red-100 text-red-700'
-                }`}>
-                  {(item as FormItem).status}
-                </span>
-              </div>
+              <p className="text-xs text-gray-500">
+                {(item as FormItem).responses || 0} responses
+              </p>
             )}
           </div>
         </div>
@@ -372,21 +382,21 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
     <DragDropContext onDragEnd={handleDragEnd}>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <div className="fixed w-full bg-white border-b border-gray-200 shadow-sm">
-          <div className="px-6 py-4">
+        <div className="fixed w-full bg-white border-b border-gray-200 shadow-sm z-30">
+          <div className="px-4 sm:px-6 py-4">
             <div className="flex items-center justify-between">
               {/* Logo */}
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <FileText className="w-6 h-6 text-white" />
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <FileText className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
                 </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">Forms</h1>
+                <div className="hidden sm:block">
+                  <h1 className="text-lg sm:text-xl font-bold text-gray-900">Forms</h1>
                 </div>
               </div>
 
               {/* Search Bar - Centered */}
-              <div className="flex-1 max-w-2xl mx-8">
+              <div className="flex-1 max-w-2xl mx-4 sm:mx-8">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
@@ -409,10 +419,10 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
                     <img 
                       src={user.avatar} 
                       alt={user.name}
-                      className="w-10 h-10 rounded-full object-cover"
+                      className="w-8 h-8 sm:w-10 sm:h-10 rounded-full object-cover"
                     />
                   ) : (
-                    <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
                       {getInitials()}
                     </div>
                   )}
@@ -498,23 +508,23 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
           </div>
         </div>
 
-        <div className="px-6 py-4 bg-white border-b border-gray-200">
+        <div className="px-4 sm:px-6 py-4 bg-white border-b border-gray-200">
           {/* Create Form Options */}
-          <div className="mb-8 mt-24">
+          <div className="mb-8 mt-16 sm:mt-24">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">Create New Form</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {/* Blank Form */}
               <div 
                 onClick={onCreateForm}
-                className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-all cursor-pointer group"
+                className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer group"
               >
-                <div className="flex items-start space-x-4">
-                  <div className="w-20 h-24 bg-gray-100 rounded-lg border-2 border-gray-200 flex items-center justify-center group-hover:border-blue-500 transition-colors relative">
+                <div className="flex flex-col sm:flex-row items-start space-y-3 sm:space-y-0 sm:space-x-4">
+                  <div className="w-16 h-20 sm:w-20 sm:h-24 bg-gray-100 rounded-lg border-2 border-gray-200 flex items-center justify-center group-hover:border-blue-500 transition-colors relative">
                     <div className="absolute top-2 left-2 w-2 h-2 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <FileText className="w-10 h-10 text-gray-400 group-hover:text-blue-500" />
+                    <FileText className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400 group-hover:text-blue-500" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Blank Form</h3>
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Blank Form</h3>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       Start with a blank form and add your own questions
                     </p>
@@ -523,14 +533,14 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
               </div>
 
               {/* Create by AI */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-all cursor-pointer group">
-                <div className="flex items-start space-x-4">
-                  <div className="w-20 h-24 bg-purple-50 rounded-lg border-2 border-purple-200 flex items-center justify-center group-hover:border-purple-500 transition-colors relative">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer group">
+                <div className="flex flex-col sm:flex-row items-start space-y-3 sm:space-y-0 sm:space-x-4">
+                  <div className="w-16 h-20 sm:w-20 sm:h-24 bg-purple-50 rounded-lg border-2 border-purple-200 flex items-center justify-center group-hover:border-purple-500 transition-colors relative">
                     <div className="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <Bot className="w-10 h-10 text-purple-400 group-hover:text-purple-500" />
+                    <Bot className="w-8 h-8 sm:w-10 sm:h-10 text-purple-400 group-hover:text-purple-500" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Create by AI</h3>
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Create by AI</h3>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       Let AI help you create a form based on your description
                     </p>
@@ -539,14 +549,14 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
               </div>
 
               {/* Use Template */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-all cursor-pointer group">
-                <div className="flex items-start space-x-4">
-                  <div className="w-20 h-24 bg-green-50 rounded-lg border-2 border-green-200 flex items-center justify-center group-hover:border-green-500 transition-colors relative">
+              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer group sm:col-span-2 lg:col-span-1">
+                <div className="flex flex-col sm:flex-row items-start space-y-3 sm:space-y-0 sm:space-x-4">
+                  <div className="w-16 h-20 sm:w-20 sm:h-24 bg-green-50 rounded-lg border-2 border-green-200 flex items-center justify-center group-hover:border-green-500 transition-colors relative">
                     <div className="absolute top-2 left-2 w-2 h-2 bg-green-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                    <ImageIcon className="w-10 h-10 text-green-400 group-hover:text-green-500" />
+                    <ImageIcon className="w-8 h-8 sm:w-10 sm:h-10 text-green-400 group-hover:text-green-500" />
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Use Template</h3>
+                    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Use Template</h3>
                     <p className="text-sm text-gray-600 leading-relaxed">
                       Choose from pre-built templates for common use cases
                     </p>
@@ -558,34 +568,36 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
         </div>
 
         {/* Toolbar */}
-        <div className="bg-white border-b border-gray-200 px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+        <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
               <button
                 onClick={() => {
                   setSelectedFolder(null);
                   setShowFolderModal(true);
                 }}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
               >
                 <FolderPlus className="w-4 h-4" />
-                <span>New Folder</span>
+                <span className="hidden sm:inline">New Folder</span>
+                <span className="sm:hidden">Folder</span>
               </button>
               
               <button
                 onClick={onCreateForm}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm"
               >
                 <Plus className="w-4 h-4" />
-                <span>New Form</span>
+                <span className="hidden sm:inline">New Form</span>
+                <span className="sm:hidden">Form</span>
               </button>
             </div>
 
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as any)}
-                className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+                className="flex-1 sm:flex-none px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
               >
                 <option value="all">All Status</option>
                 <option value="published">Published</option>
@@ -612,7 +624,7 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
         </div>
 
         {/* Main Content */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           <Droppable droppableId="main-area">
             {(provided, snapshot) => (
               <div
@@ -623,7 +635,7 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
                 }`}
               >
                 {viewMode === 'grid' ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3 sm:gap-4">
                     {/* Folders */}
                     {filteredFolders.map((folder, index) => (
                       <Draggable key={`folder-${folder._id}`} draggableId={`folder-${folder._id}`} index={index}>
@@ -657,8 +669,8 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <div className="bg-white rounded-lg border border-gray-200">
-                    <div className="grid grid-cols-4 gap-4 p-4 border-b border-gray-200 bg-gray-50 text-sm font-medium text-gray-700">
+                  <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="hidden sm:grid sm:grid-cols-4 gap-4 p-4 border-b border-gray-200 bg-gray-50 text-sm font-medium text-gray-700">
                       <div>Name</div>
                       <div>Type</div>
                       <div>Status</div>
@@ -667,33 +679,37 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
                     <div className="divide-y divide-gray-200">
                       {/* Folders in list view */}
                       {filteredFolders.map((folder, index) => (
-                        <div key={folder._id} className="grid grid-cols-4 gap-4 p-4 hover:bg-gray-50 cursor-pointer">
+                        <div key={folder._id} className="grid grid-cols-1 sm:grid-cols-4 gap-2 sm:gap-4 p-4 hover:bg-gray-50 cursor-pointer">
                           <div className="flex items-center space-x-3">
                             <Folder className="w-5 h-5" style={{ color: folder.color }} />
                             <span className="text-sm font-medium">{folder.name}</span>
                           </div>
-                          <div className="text-sm text-gray-600">Folder</div>
-                          <div className="text-sm text-gray-600">-</div>
+                          <div className="text-sm text-gray-600 sm:block hidden">Folder</div>
+                          <div className="text-sm text-gray-600 sm:block hidden">-</div>
                           <div className="text-sm text-gray-600">{new Date(folder.createdAt).toLocaleDateString()}</div>
                         </div>
                       ))}
                       
                       {/* Forms in list view */}
                       {filteredStandaloneForms.map((form, index) => (
-                        <div key={form._id} className="grid grid-cols-4 gap-4 p-4 hover:bg-gray-50 cursor-pointer">
+                        <div key={form._id} className="grid grid-cols-1 sm:grid-cols-4 gap-2 sm:gap-4 p-4 hover:bg-gray-50 cursor-pointer">
                           <div className="flex items-center space-x-3">
-                            <FileText className="w-5 h-5 text-blue-600" />
+                            <div className="relative">
+                              <FileText className="w-5 h-5 text-blue-600" />
+                              <div 
+                                className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${getStatusDotColor(form.status)}`}
+                                title={`Status: ${form.status}`}
+                              />
+                            </div>
                             <span className="text-sm font-medium">{form.title}</span>
                           </div>
-                          <div className="text-sm text-gray-600">Form</div>
-                          <div>
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                              form.status === 'published' ? 'bg-green-100 text-green-800' :
-                              form.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {form.status}
-                            </span>
+                          <div className="text-sm text-gray-600 sm:block hidden">Form</div>
+                          <div className="flex items-center">
+                            <div 
+                              className={`w-2 h-2 rounded-full mr-2 ${getStatusDotColor(form.status)}`}
+                              title={`Status: ${form.status}`}
+                            />
+                            <span className="text-sm text-gray-600 capitalize">{form.status}</span>
                           </div>
                           <div className="text-sm text-gray-600">{new Date(form.createdAt).toLocaleDateString()}</div>
                         </div>
@@ -707,11 +723,11 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
                 {/* Empty State */}
                 {filteredFolders.length === 0 && filteredStandaloneForms.length === 0 && (
                   <div className="text-center py-16">
-                    <FileText className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                    <FileText className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-300 mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
                       {forms.length === 0 ? 'No forms created yet' : 'No forms or folders found'}
                     </h3>
-                    <p className="text-gray-600 mb-6">
+                    <p className="text-gray-600 mb-6 px-4">
                       {searchTerm || filterStatus !== 'all' 
                         ? 'Try adjusting your search or filter criteria'
                         : 'Get started by creating your first form'
@@ -720,9 +736,9 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
                     {!searchTerm && filterStatus === 'all' && forms.length === 0 && (
                       <button
                         onClick={onCreateForm}
-                        className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                        className="inline-flex items-center px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
                       >
-                        <Plus className="w-5 h-5 mr-2" />
+                        <Plus className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                         Create Your First Form
                       </button>
                     )}
@@ -759,8 +775,8 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
 
         {/* Folder Contents Modal */}
         {openFolderModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl mx-4 max-h-[90vh] overflow-hidden">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
               {/* Modal Header */}
               <div className="bg-gray-50 border-b border-gray-200 p-4">
                 <div className="flex items-center justify-between">
@@ -792,7 +808,7 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
               </div>
 
               {/* Modal Content */}
-              <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+              <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
                 <Droppable droppableId={`folder-${openFolderModal._id}`}>
                   {(provided, snapshot) => (
                     <div
@@ -803,7 +819,7 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
                       }`}
                     >
                       {getFormsInFolder(openFolderModal._id).length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
                           {getFormsInFolder(openFolderModal._id).map((form, index) => (
                             <Draggable key={`form-${form._id}`} draggableId={`form-${form._id}`} index={index}>
                               {(provided, snapshot) => (
@@ -820,7 +836,7 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
                         </div>
                       ) : (
                         <div className="text-center py-16">
-                          <Folder className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                          <Folder className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-300 mb-4" />
                           <h3 className="text-lg font-medium text-gray-900 mb-2">This folder is empty</h3>
                           <p className="text-gray-600">Drag forms here to organize them</p>
                         </div>

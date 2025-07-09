@@ -29,13 +29,15 @@ interface SidebarProps {
   onEditForm: (id: string) => void;
   currentView: string;
   onNavigate: (view: string) => void;
+  onToggle?: (minimized: boolean) => void;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ 
   onCreateForm, 
   onEditForm, 
   currentView,
-  onNavigate 
+  onNavigate,
+  onToggle 
 }) => {
   const { user, logout, getInitials } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,6 +48,13 @@ const Sidebar: React.FC<SidebarProps> = ({
   useEffect(() => {
     loadRecentForms();
   }, []);
+
+  useEffect(() => {
+    // Notify parent component about sidebar state change
+    if (onToggle) {
+      onToggle(isMinimized);
+    }
+  }, [isMinimized, onToggle]);
 
   const loadRecentForms = async () => {
     try {
@@ -62,6 +71,10 @@ const Sidebar: React.FC<SidebarProps> = ({
     logout();
     // Redirect to login page or home
     window.location.href = '/login';
+  };
+
+  const handleToggle = () => {
+    setIsMinimized(!isMinimized);
   };
 
   const getStatusColor = (status: string) => {
@@ -140,7 +153,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   if (!user) {
     return (
-      <div className="w-64 bg-white border-r border-gray-200 h-screen flex items-center justify-center">
+      <div className={`${isMinimized ? 'w-16' : 'w-64'} bg-white border-r border-gray-200 h-screen flex items-center justify-center transition-all duration-300`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
           <p className="text-sm text-gray-600">Loading...</p>
@@ -152,7 +165,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Minimized version
   if (isMinimized) {
     return (
-      <div className="w-16 bg-white border-r border-gray-200 h-screen flex flex-col">
+      <div className="w-16 bg-white border-r border-gray-200 h-screen flex flex-col transition-all duration-300">
         {/* Logo - Minimized */}
         <div className="p-3 border-b border-gray-200">
           <div className="flex justify-center">
@@ -165,7 +178,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {/* Toggle Button */}
         <div className="p-3 border-b border-gray-200">
           <button
-            onClick={() => setIsMinimized(false)}
+            onClick={handleToggle}
             className="w-full flex justify-center p-2 rounded-lg hover:bg-gray-100 transition-colors"
             title="Expand sidebar"
           >
@@ -231,7 +244,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   // Full version
   return (
-    <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col">
+    <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col transition-all duration-300">
       {/* Logo */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
@@ -244,7 +257,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
           <button
-            onClick={() => setIsMinimized(true)}
+            onClick={handleToggle}
             className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
             title="Minimize sidebar"
           >

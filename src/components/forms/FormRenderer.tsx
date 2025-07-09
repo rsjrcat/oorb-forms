@@ -277,7 +277,7 @@ const FormRenderer: React.FC = () => {
                     onChange={(e) => handleInputChange(field.id, e.target.value)}
                     className="text-blue-600 focus:ring-blue-500"
                   />
-                  <span>{option}</span>
+                  <span className="text-sm sm:text-base">{option}</span>
                 </label>
               ))}
             </div>
@@ -309,7 +309,7 @@ const FormRenderer: React.FC = () => {
                     }}
                     className="text-blue-600 focus:ring-blue-500 rounded"
                   />
-                  <span>{option}</span>
+                  <span className="text-sm sm:text-base">{option}</span>
                 </label>
               ))}
             </div>
@@ -346,14 +346,14 @@ const FormRenderer: React.FC = () => {
             <div className={`border-2 border-dashed rounded-md p-4 text-center transition-colors ${
               errors[field.id] ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
             }`}>
-              <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 mx-auto mb-2" />
               <input
                 type="file"
                 onChange={(e) => handleInputChange(field.id, e.target.files?.[0]?.name || '')}
                 className="hidden"
                 id={field.id}
               />
-              <label htmlFor={field.id} className="cursor-pointer text-blue-600 hover:text-blue-700">
+              <label htmlFor={field.id} className="cursor-pointer text-blue-600 hover:text-blue-700 text-sm sm:text-base">
                 Click to upload or drag and drop
               </label>
               {responses[field.id] && (
@@ -376,7 +376,7 @@ const FormRenderer: React.FC = () => {
               {[1, 2, 3, 4, 5].map((star) => (
                 <Star 
                   key={star} 
-                  className={`w-6 h-6 cursor-pointer transition-colors ${
+                  className={`w-6 h-6 sm:w-8 sm:h-8 cursor-pointer transition-colors ${
                     (responses[field.id] || 0) >= star 
                       ? 'text-yellow-400 fill-current' 
                       : 'text-gray-300 hover:text-yellow-400'
@@ -406,7 +406,7 @@ const FormRenderer: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading form...</p>
@@ -417,9 +417,9 @@ const FormRenderer: React.FC = () => {
 
   if (!form) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Form Not Found</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Form Not Found</h1>
           <p className="text-gray-600">The form you're looking for doesn't exist or has been removed.</p>
         </div>
       </div>
@@ -428,9 +428,9 @@ const FormRenderer: React.FC = () => {
 
   if (form.status !== 'published') {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Form Not Available</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Form Not Available</h1>
           <p className="text-gray-600">This form is not currently accepting responses.</p>
         </div>
       </div>
@@ -439,11 +439,11 @@ const FormRenderer: React.FC = () => {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="max-w-md mx-auto text-center">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-            <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">Thank You!</h1>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8">
+            <CheckCircle className="w-12 h-12 sm:w-16 sm:h-16 text-green-500 mx-auto mb-4" />
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Thank You!</h1>
             <p className="text-gray-600 mb-4">Your response has been submitted successfully.</p>
             {user && (
               <p className="text-sm text-blue-600">
@@ -460,11 +460,11 @@ const FormRenderer: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <FormHeader form={form} />
       
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+      <div className="max-w-2xl mx-auto px-4 py-6 sm:py-8">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sm:p-8">
           {/* Progress Bar */}
           {form.settings?.showProgressBar && form.fields.length > 5 && (
-            <div className="mb-8">
+            <div className="mb-6 sm:mb-8">
               <div className="flex justify-between text-sm text-gray-600 mb-2">
                 <span>Progress</span>
                 <span>{Math.round((Object.keys(responses).length / form.fields.length) * 100)}%</span>
@@ -491,7 +491,7 @@ const FormRenderer: React.FC = () => {
             </div>
           )}
           
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
             {form.fields.map((field) => (
               <div key={field.id}>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -505,7 +505,7 @@ const FormRenderer: React.FC = () => {
             <button
               type="submit"
               disabled={submitting || (form.settings?.requireLogin && !user)}
-              className="w-full flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full flex items-center justify-center px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
                 <>
