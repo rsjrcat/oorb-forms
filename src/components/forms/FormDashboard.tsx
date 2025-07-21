@@ -15,6 +15,7 @@ import temp3d from '../../asset/temp.png';
 import AIFormBuilder from './AIFormBuilder';
 import TemplateLibrary from './TemplateLibrary';
 import FolderContentsModal from './FolderContentsModal';
+import MyResponsesModal from './MyResponsesModal';
 
 interface FormItem {
   _id: string;
@@ -63,6 +64,7 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
   const [showAIBuilder, setShowAIBuilder] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [draggedForm, setDraggedForm] = useState<FormItem | null>(null);
+  const [showMyResponses, setShowMyResponses] = useState(false);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -709,6 +711,15 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
               <span className="hidden sm:inline">New Form</span>
               <span className="sm:hidden">Form</span>
             </button>
+            
+            <button
+              onClick={() => setShowMyResponses(true)}
+              className="flex items-center space-x-2 px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors text-sm"
+            >
+              <User className="w-4 h-4" />
+              <span className="hidden sm:inline">My Responses</span>
+              <span className="sm:hidden">Responses</span>
+            </button>
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
@@ -935,6 +946,13 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
         <TemplateLibrary
           onSelectTemplate={handleTemplateSelected}
           onClose={() => setShowTemplates(false)}
+        />
+      )}
+
+      {/* My Responses Modal */}
+      {showMyResponses && (
+        <MyResponsesModal
+          onClose={() => setShowMyResponses(false)}
         />
       )}
     </div>

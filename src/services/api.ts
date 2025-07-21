@@ -198,6 +198,11 @@ export const responseAPI = {
     console.log('Response API: Deleting response:', id);
     return api.delete(`/responses/${id}`);
   },
+  
+  getMyResponses: () => {
+    console.log('Response API: Getting my responses');
+    return api.get('/responses/my-responses');
+  },
 };
 
 // Export API

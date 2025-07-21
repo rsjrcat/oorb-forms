@@ -187,4 +187,33 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Get user's own responses (forms they've submitted to)
+router.get('/my-responses', authenticateToken, async (req, res) => {
+  try {
+    console.log('My responses route - Getting responses for user:', req.user._id);
+    
+    const responses = await Response.find({ 
+      'submitterInfo.userId': req.user._id,
+      'submitterInfo.savedToAccount': true 
+    })
+    .populate('formId', 'title description')
+    .sort({ submittedAt: -1 });
+
+    const formattedResponses = responses.map(response => ({
+      _id: response._id,
+      formId: response.formId._id,
+      formTitle: response.formId.title,
+      responses: response.responses,
+      submittedAt: response.submittedAt,
+      completionTime: response.completionTime
+    }));
+
+    console.log('My responses route - Found', formattedResponses.length, 'responses');
+    res.json(formattedResponses);
+  } catch (error) {
+    console.error('My responses route - Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

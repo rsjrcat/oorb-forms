@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Sparkles, Wand2, Send, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+const DEEPSEEK_API_KEY = 'sk-your-deepseek-api-key'; // Replace with your actual API key
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+
 interface AIFormBuilderProps {
   onFormGenerated: (form: any) => void;
   onClose: () => void;
@@ -19,13 +22,86 @@ const AIFormBuilder: React.FC<AIFormBuilderProps> = ({ onFormGenerated, onClose 
 
     setGenerating(true);
     
-    // Simulate AI form generation
-    setTimeout(() => {
-      const generatedForm = generateFormFromPrompt(prompt);
+    try {
+      const generatedForm = await generateFormWithAI(prompt);
       onFormGenerated(generatedForm);
-      setGenerating(false);
       toast.success('Form generated successfully!');
-    }, 2000);
+    } catch (error) {
+      console.error('AI form generation error:', error);
+      toast.error('Failed to generate form. Please try again.');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const generateFormWithAI = async (prompt: string) => {
+    const systemPrompt = `You are a form builder AI. Generate a JSON form structure based on the user's description. 
+    
+    Return ONLY a valid JSON object with this structure:
+    {
+      "title": "Form Title",
+      "description": "Form description",
+      "fields": [
+        {
+          "type": "text|email|phone|textarea|select|radio|checkbox|date|file|rating",
+          "label": "Field Label",
+          "placeholder": "Placeholder text (optional)",
+          "required": true|false,
+          "options": ["option1", "option2"] // only for select, radio, checkbox
+        }
+      ]
+    }
+    
+    Available field types: text, email, phone, textarea, select, radio, checkbox, date, file, rating
+    Make the form practical and user-friendly based on the description.`;
+
+    const response = await fetch(DEEPSEEK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const aiResponse = data.choices[0]?.message?.content;
+
+    if (!aiResponse) {
+      throw new Error('No response from AI');
+    }
+
+    try {
+      // Extract JSON from the response (in case there's extra text)
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/);
+      const jsonString = jsonMatch ? jsonMatch[0] : aiResponse;
+      const formData = JSON.parse(jsonString);
+      
+      // Validate the structure
+      if (!formData.title || !formData.fields || !Array.isArray(formData.fields)) {
+        throw new Error('Invalid form structure from AI');
+      }
+
+      return {
+        ...formData,
+        status: 'draft'
+      };
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', aiResponse);
+      throw new Error('Failed to parse AI response');
+    }
   };
 
   const generateFormFromPrompt = (prompt: string) => {

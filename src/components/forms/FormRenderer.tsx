@@ -5,6 +5,7 @@ import { formAPI, responseAPI } from '../../services/api';
 import FormHeader from './FormHeader';
 import ResponseSavePrompt from './ResponseSavePrompt';
 import toast from 'react-hot-toast';
+import FileUploadField from './FileUploadField';
 
 interface FormField {
   id: string;
@@ -343,23 +344,12 @@ const FormRenderer: React.FC = () => {
       case 'file':
         return (
           <div>
-            <div className={`border-2 border-dashed rounded-md p-4 text-center transition-colors ${
-              errors[field.id] ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-gray-400'
-            }`}>
-              <Upload className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 mx-auto mb-2" />
-              <input
-                type="file"
-                onChange={(e) => handleInputChange(field.id, e.target.files?.[0]?.name || '')}
-                className="hidden"
-                id={field.id}
-              />
-              <label htmlFor={field.id} className="cursor-pointer text-blue-600 hover:text-blue-700 text-sm sm:text-base">
-                Click to upload or drag and drop
-              </label>
-              {responses[field.id] && (
-                <p className="text-sm text-gray-600 mt-2">Selected: {responses[field.id]}</p>
-              )}
-            </div>
+            <FileUploadField
+              value={responses[field.id] || ''}
+              onChange={(value) => handleInputChange(field.id, value)}
+              accept="*/*"
+              maxSize={10}
+            />
             {errors[field.id] && (
               <div className="flex items-center space-x-1 mt-1 text-red-600 text-sm">
                 <AlertCircle className="w-4 h-4" />
