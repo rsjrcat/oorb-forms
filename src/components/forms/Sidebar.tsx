@@ -244,7 +244,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   // Full version
   return (
-    <div className="w-64 bg-white border-r border-gray-200 h-screen flex flex-col transition-all duration-300">
+    <div className="w-64 z-30 bg-white border-r border-gray-200 h-screen flex flex-col transition-all duration-300">
       {/* Logo */}
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">

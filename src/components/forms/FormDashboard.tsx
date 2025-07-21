@@ -9,6 +9,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import FolderModal from './FolderModal';
 import toast from 'react-hot-toast';
 import { formAPI, folderAPI } from '../../services/api';
+import form3d from '../../asset/form.png';
+import ai3d from '../../asset/ai.png';
+import temp3d from '../../asset/temp.png';
 
 interface FormItem {
   _id: string;
@@ -401,7 +404,7 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="fixed w-full md:w-auto lg:left-64 lg:right-0 bg-white border-b border-gray-200 shadow-sm z-30">
+      <div className="fixed w-full md:w-auto lg:left-64 lg:right-0 bg-transparent  z-30">
         <div className="px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
@@ -413,6 +416,8 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
                 <h1 className="text-lg sm:text-xl font-bold text-gray-900">Forms</h1>
               </div>
             </div> */}
+
+            
 
             {/* Search Bar - Centered */}
             <div className="flex-1 max-w-2xl mx-4 sm:mx-8">
@@ -527,7 +532,7 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 py-4 bg-white border-b border-gray-200">
+      <div className="px-4 sm:px-6 py-4 bg-white border-t border-gray-200">
         {/* Create Form Options */}
         <div className="mb-8 mt-16 sm:mt-24">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Create New Form</h2>
@@ -535,12 +540,13 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
             {/* Blank Form */}
             <div 
               onClick={onCreateForm}
-              className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer group"
+              className="bg-blue-200 rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer group"
             >
               <div className="flex flex-col sm:flex-row items-start space-y-3 sm:space-y-0 sm:space-x-4">
-                <div className="w-16 h-20 sm:w-20 sm:h-24 bg-gray-100 rounded-lg border-2 border-gray-200 flex items-center justify-center group-hover:border-blue-500 transition-colors relative">
+                <div className="w-16 h-20 sm:w-20 sm:h-24  rounded-lg  border-gray-200 flex items-center justify-center group-hover:border-blue-500 transition-colors relative">
                   <div className="absolute top-2 left-2 w-2 h-2 bg-blue-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <FileText className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400 group-hover:text-blue-500" />
+                  {/* <FileText className="w-8 h-8 sm:w-10 sm:h-10 text-gray-400 group-hover:text-blue-500" /> */}
+<img src={form3d} alt="form" className="object-contain" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Blank Form</h3>
@@ -552,11 +558,12 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
             </div>
 
             {/* Create by AI */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer group">
+            <div className="bg-violet-200 rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer group">
               <div className="flex flex-col sm:flex-row items-start space-y-3 sm:space-y-0 sm:space-x-4">
-                <div className="w-16 h-20 sm:w-20 sm:h-24 bg-purple-50 rounded-lg border-2 border-purple-200 flex items-center justify-center group-hover:border-purple-500 transition-colors relative">
+                <div className="w-16 h-20 sm:w-20 sm:h-24 bg-purple-50 rounded-lg  flex items-center justify-center group-hover:border-purple-500 transition-colors relative">
                   <div className="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <Bot className="w-8 h-8 sm:w-10 sm:h-10 text-purple-400 group-hover:text-purple-500" />
+                  {/* <Bot className="w-8 h-8 sm:w-10 sm:h-10 text-purple-400 group-hover:text-purple-500" /> */}
+                  <img src={ai3d} ></img>
                 </div>
                 <div className="flex-1">
                   <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Create by AI</h3>
@@ -568,11 +575,12 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
             </div>
 
             {/* Use Template */}
-            <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer group sm:col-span-2 lg:col-span-1">
+            <div className="bg-green-200 rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer group sm:col-span-2 lg:col-span-1">
               <div className="flex flex-col sm:flex-row items-start space-y-3 sm:space-y-0 sm:space-x-4">
-                <div className="w-16 h-20 sm:w-20 sm:h-24 bg-green-50 rounded-lg border-2 border-green-200 flex items-center justify-center group-hover:border-green-500 transition-colors relative">
-                  <div className="absolute top-2 left-2 w-2 h-2 bg-green-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  <ImageIcon className="w-8 h-8 sm:w-10 sm:h-10 text-green-400 group-hover:text-green-500" />
+                <div className="w-16 h-20 sm:w-20 sm:h-24  rounded-lg flex items-center justify-center group-hover:border-green-500 transition-colors relative">
+                  <div className="absolute top-2 left-2 w-2 h-2  rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  {/* <ImageIcon className="w-8 h-8 sm:w-10 sm:h-10 text-green-400 group-hover:text-green-500" /> */}
+                  <img src={temp3d} alt="temp" className="object-contain" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Use Template</h3>
