@@ -93,6 +93,15 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
   const [activeTab, setActiveTab] = useState<'fields' | 'logic' | 'design' | 'settings'>('fields');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [mobileFieldEditorOpen, setMobileFieldEditorOpen] = useState(false);
+  const [formSettings, setFormSettings] = useState({
+    allowMultipleResponses: true,
+    requireLogin: false,
+    showProgressBar: true,
+    customTheme: {
+      primaryColor: '#3B82F6',
+      backgroundColor: '#FFFFFF'
+    }
+  });
 
   const fieldTypes = [
     { type: 'text', label: 'Text Input', icon: Type },
@@ -114,6 +123,11 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
     }
   }, [formId]);
 
+  useEffect(() => {
+    if (form.settings) {
+      setFormSettings(form.settings);
+    }
+  }, [form]);
   const loadForm = async () => {
     try {
       const response = await formAPI.getForm(formId!);
@@ -179,11 +193,16 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
 
     setSaving(true);
     try {
+      const formDataToSave = {
+        ...form,
+        settings: formSettings
+      };
+      
       if (form._id) {
-        await formAPI.updateForm(form._id, form);
+        await formAPI.updateForm(form._id, formDataToSave);
         toast.success('Form saved successfully');
       } else {
-        const response = await formAPI.createForm(form);
+        const response = await formAPI.createForm(formDataToSave);
         setForm(response.data);
         toast.success('Form created successfully');
       }

@@ -20,7 +20,7 @@ const transporter = createTransport({
 // Submit form response (public - no authentication needed)
 router.post('/', async (req, res) => {
   try {
-    const { formId, responses, submitterInfo, completionTime } = req.body;
+    const { formId, responses, submitterInfo, completionTime, userId } = req.body;
     
     // Verify form exists and is published
     const form = await Form.findById(formId);
@@ -36,7 +36,11 @@ router.post('/', async (req, res) => {
     const response = new Response({
       formId,
       responses,
-      submitterInfo,
+      submitterInfo: {
+        ...submitterInfo,
+        userId: userId || submitterInfo?.userId,
+        savedToAccount: !!userId
+      },
       completionTime,
       submittedAt: new Date()
     });
@@ -194,7 +198,7 @@ router.get('/my-responses', authenticateToken, async (req, res) => {
     
     const responses = await Response.find({ 
       'submitterInfo.userId': req.user._id,
-      'submitterInfo.savedToAccount': true 
+      'submitterInfo.savedToAccount': true
     })
     .populate('formId', 'title description')
     .sort({ submittedAt: -1 });
