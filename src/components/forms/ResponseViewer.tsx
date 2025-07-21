@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Trash2, Calendar, Clock, User, Menu, X } from 'lucide-react';
+import { ArrowLeft, Download, Trash2, Calendar, Clock, User, Menu, X, FileText, BarChart3 } from 'lucide-react';
 import { responseAPI, exportAPI, formAPI } from '../../services/api';
 import toast from 'react-hot-toast';
 
@@ -13,6 +13,10 @@ interface Response {
   }>;
   submittedAt: string;
   completionTime?: number;
+  submitterInfo?: {
+    userId?: string;
+    savedToAccount?: boolean;
+  };
 }
 
 interface Form {
@@ -33,6 +37,7 @@ const ResponseViewer: React.FC<ResponseViewerProps> = ({ formId, onBack }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [selectedResponse, setSelectedResponse] = useState<Response | null>(null);
 
   useEffect(() => {
     loadForm();
@@ -55,12 +60,10 @@ const ResponseViewer: React.FC<ResponseViewerProps> = ({ formId, onBack }) => {
       const response = await responseAPI.getResponses(formId, currentPage, 10);
       console.log('ResponseViewer: API response:', response.data);
       
-      // Handle different response structures
       if (response.data.responses) {
         setResponses(response.data.responses);
         setTotalPages(response.data.pagination?.total || 1);
       } else if (Array.isArray(response.data)) {
-        // If the API returns responses directly as an array
         setResponses(response.data);
         setTotalPages(1);
       } else {
@@ -71,7 +74,6 @@ const ResponseViewer: React.FC<ResponseViewerProps> = ({ formId, onBack }) => {
     } catch (error) {
       console.error('ResponseViewer: Error loading responses:', error);
       
-      // More specific error handling
       if (error.response?.status === 404) {
         toast.error('Form not found or no responses available');
       } else if (error.response?.status === 403) {
@@ -124,7 +126,7 @@ const ResponseViewer: React.FC<ResponseViewerProps> = ({ formId, onBack }) => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading responses...</p>
@@ -134,22 +136,31 @@ const ResponseViewer: React.FC<ResponseViewerProps> = ({ formId, onBack }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-4 sm:space-y-0">
             <div className="flex items-center space-x-4 min-w-0 flex-1">
               <button
                 onClick={onBack}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-800 flex-shrink-0"
+                className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 flex-shrink-0 transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span className="hidden sm:inline">Back to Dashboard</span>
               </button>
               <div className="min-w-0">
                 <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{form?.title}</h1>
-                <p className="text-sm sm:text-base text-gray-600">{responses.length} responses</p>
+                <div className="flex items-center space-x-4 text-sm text-gray-600">
+                  <div className="flex items-center space-x-1">
+                    <FileText className="w-4 h-4" />
+                    <span>{responses.length} responses</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <BarChart3 className="w-4 h-4" />
+                    <span>Analytics</span>
+                  </div>
+                </div>
               </div>
             </div>
             
@@ -158,14 +169,14 @@ const ResponseViewer: React.FC<ResponseViewerProps> = ({ formId, onBack }) => {
               <div className="hidden sm:flex items-center space-x-2">
                 <button
                   onClick={downloadExcel}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm"
+                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm shadow-lg transition-all"
                 >
                   <Download className="w-4 h-4" />
                   <span>Excel</span>
                 </button>
                 <button
                   onClick={downloadCSV}
-                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm shadow-lg transition-all"
                 >
                   <Download className="w-4 h-4" />
                   <span>CSV</span>
@@ -210,7 +221,7 @@ const ResponseViewer: React.FC<ResponseViewerProps> = ({ formId, onBack }) => {
                   downloadExcel();
                   setShowMobileMenu(false);
                 }}
-                className="w-full flex items-center space-x-3 px-4 py-3 bg-green-600 text-white rounded-lg"
+                className="w-full flex items-center space-x-3 px-4 py-3 bg-green-600 text-white rounded-lg shadow-lg"
               >
                 <Download className="w-5 h-5" />
                 <span>Download Excel</span>
@@ -220,7 +231,7 @@ const ResponseViewer: React.FC<ResponseViewerProps> = ({ formId, onBack }) => {
                   downloadCSV();
                   setShowMobileMenu(false);
                 }}
-                className="w-full flex items-center space-x-3 px-4 py-3 bg-blue-600 text-white rounded-lg"
+                className="w-full flex items-center space-x-3 px-4 py-3 bg-blue-600 text-white rounded-lg shadow-lg"
               >
                 <Download className="w-5 h-5" />
                 <span>Download CSV</span>
@@ -232,20 +243,22 @@ const ResponseViewer: React.FC<ResponseViewerProps> = ({ formId, onBack }) => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         {responses.length === 0 ? (
-          <div className="text-center py-12">
-            <User className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No responses yet</h3>
-            <p className="text-gray-600">
-              Share your form to start collecting responses.
-            </p>
+          <div className="text-center py-16">
+            <div className="bg-white rounded-xl shadow-xl p-8 max-w-md mx-auto">
+              <User className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No responses yet</h3>
+              <p className="text-gray-600">
+                Share your form to start collecting responses.
+              </p>
+            </div>
           </div>
         ) : (
           <div className="space-y-4 sm:space-y-6">
             {responses.map((response, index) => (
-              <div key={response._id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
+              <div key={response._id} className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 sm:p-6 hover:shadow-xl transition-shadow">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 space-y-2 sm:space-y-0">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-4">
-                    <h3 className="text-base sm:text-lg font-medium text-gray-900">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                       Response #{(currentPage - 1) * 10 + index + 1}
                     </h3>
                     <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs sm:text-sm text-gray-500">
@@ -263,21 +276,35 @@ const ResponseViewer: React.FC<ResponseViewerProps> = ({ formId, onBack }) => {
                           <span>{response.completionTime}s completion</span>
                         </div>
                       )}
+                      {response.submitterInfo?.savedToAccount && (
+                        <div className="flex items-center space-x-1">
+                          <User className="w-4 h-4 text-blue-500" />
+                          <span className="text-blue-600">Saved to account</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   
-                  <button
-                    onClick={() => deleteResponse(response._id)}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md self-end sm:self-auto"
-                    title="Delete response"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setSelectedResponse(response)}
+                      className="px-3 py-1 text-blue-600 hover:bg-blue-50 rounded-lg text-sm transition-colors"
+                    >
+                      View Details
+                    </button>
+                    <button
+                      onClick={() => deleteResponse(response._id)}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg self-end sm:self-auto transition-colors"
+                      title="Delete response"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="grid gap-3 sm:gap-4">
-                  {response.responses.map((fieldResponse, fieldIndex) => (
-                    <div key={fieldIndex} className="border-l-4 border-blue-500 pl-3 sm:pl-4">
+                  {response.responses.slice(0, 3).map((fieldResponse, fieldIndex) => (
+                    <div key={fieldIndex} className="border-l-4 border-blue-500 pl-3 sm:pl-4 bg-blue-50 rounded-r-lg p-2">
                       <h4 className="font-medium text-gray-900 mb-1 text-sm sm:text-base">
                         {fieldResponse.fieldLabel}
                       </h4>
@@ -286,29 +313,34 @@ const ResponseViewer: React.FC<ResponseViewerProps> = ({ formId, onBack }) => {
                       </p>
                     </div>
                   ))}
+                  {response.responses.length > 3 && (
+                    <div className="text-sm text-gray-500 pl-4">
+                      +{response.responses.length - 3} more fields
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
             
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-2">
+              <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-2 bg-white rounded-xl shadow-lg p-4">
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 text-sm"
+                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 text-sm transition-colors"
                 >
                   Previous
                 </button>
                 
-                <span className="px-4 py-2 text-gray-700 text-sm">
+                <span className="px-4 py-2 text-gray-700 text-sm font-medium">
                   Page {currentPage} of {totalPages}
                 </span>
                 
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 disabled:opacity-50 text-sm"
+                  className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 text-sm transition-colors"
                 >
                   Next
                 </button>
@@ -317,6 +349,52 @@ const ResponseViewer: React.FC<ResponseViewerProps> = ({ formId, onBack }) => {
           </div>
         )}
       </div>
+
+      {/* Response Detail Modal */}
+      {selectedResponse && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">Response Details</h3>
+                <button
+                  onClick={() => setSelectedResponse(null)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-600" />
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-6">
+              <div className="space-y-4">
+                {selectedResponse.responses.map((fieldResponse, index) => (
+                  <div key={index} className="border-l-4 border-blue-500 pl-4 bg-blue-50 rounded-r-lg p-3">
+                    <h4 className="font-medium text-gray-900 mb-2">
+                      {fieldResponse.fieldLabel}
+                    </h4>
+                    <p className="text-gray-700 break-words">
+                      {formatValue(fieldResponse.value, fieldResponse.fieldType)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="flex flex-wrap gap-4 text-sm text-gray-500">
+                  <div>Submitted: {new Date(selectedResponse.submittedAt).toLocaleString()}</div>
+                  {selectedResponse.completionTime && (
+                    <div>Completion time: {selectedResponse.completionTime}s</div>
+                  )}
+                  {selectedResponse.submitterInfo?.savedToAccount && (
+                    <div className="text-blue-600">Saved to user account</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

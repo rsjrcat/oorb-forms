@@ -11,7 +11,9 @@ import {
   Settings,
   Menu,
   Star,
-  ChevronLeft
+  ChevronLeft,
+  Home,
+  BarChart3
 } from 'lucide-react';
 import { formAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -58,7 +60,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const loadRecentForms = async () => {
     try {
-      const response = await formAPI.getRecentForms(20); // Get more forms to fill groups
+      const response = await formAPI.getRecentForms(20);
       setRecentForms(response.data);
     } catch (error) {
       console.error('Error loading recent forms:', error);
@@ -69,7 +71,6 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const handleLogout = () => {
     logout();
-    // Redirect to login page or home
     window.location.href = '/login';
   };
 
@@ -92,24 +93,20 @@ const Sidebar: React.FC<SidebarProps> = ({
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
-    // Check if it's today
     if (date.toDateString() === now.toDateString()) {
       return 'today';
     }
 
-    // Check if it's yesterday
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
     if (date.toDateString() === yesterday.toDateString()) {
       return 'yesterday';
     }
 
-    // Check if it's within last 7 days
     if (diffDays <= 7) {
       return 'last7days';
     }
 
-    // Check if it's within last 30 days
     if (diffDays <= 30) {
       return 'lastMonth';
     }
@@ -165,11 +162,11 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Minimized version
   if (isMinimized) {
     return (
-      <div className="w-16 bg-white border-r border-gray-200 h-screen flex flex-col transition-all duration-300">
+      <div className="w-16 bg-white border-r border-gray-200 h-screen flex flex-col transition-all duration-300 shadow-sm">
         {/* Logo - Minimized */}
         <div className="p-3 border-b border-gray-200">
           <div className="flex justify-center">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
               <FileText className="w-6 h-6 text-white" />
             </div>
           </div>
@@ -179,10 +176,10 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-3 border-b border-gray-200">
           <button
             onClick={handleToggle}
-            className="w-full flex justify-center p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="w-full flex justify-center p-2 rounded-lg hover:bg-blue-50 transition-colors group"
             title="Expand sidebar"
           >
-            <ChevronRight className="w-5 h-5 text-gray-600" />
+            <ChevronRight className="w-5 h-5 text-gray-600 group-hover:text-blue-600" />
           </button>
         </div>
 
@@ -190,18 +187,29 @@ const Sidebar: React.FC<SidebarProps> = ({
         <div className="flex-1 p-3 space-y-2">
           <button
             onClick={() => onNavigate('dashboard')}
-            className="w-full flex justify-center p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className={`w-full flex justify-center p-3 rounded-lg transition-colors ${
+              currentView === 'dashboard' 
+                ? 'bg-blue-100 text-blue-600' 
+                : 'hover:bg-gray-100 text-gray-600'
+            }`}
             title="Dashboard"
           >
-            <Folder className="w-5 h-5 text-gray-600" />
+            <Home className="w-5 h-5" />
           </button>
           
           <button
             onClick={onCreateForm}
-            className="w-full flex justify-center p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="w-full flex justify-center p-3 rounded-lg hover:bg-green-50 text-gray-600 hover:text-green-600 transition-colors"
             title="Create Form"
           >
-            <Plus className="w-5 h-5 text-gray-600" />
+            <Plus className="w-5 h-5" />
+          </button>
+
+          <button
+            className="w-full flex justify-center p-3 rounded-lg hover:bg-purple-50 text-gray-600 hover:text-purple-600 transition-colors"
+            title="Analytics"
+          >
+            <BarChart3 className="w-5 h-5" />
           </button>
         </div>
 
@@ -212,10 +220,10 @@ const Sidebar: React.FC<SidebarProps> = ({
               <img 
                 src={user.avatar} 
                 alt={user.name}
-                className="w-10 h-10 rounded-full object-cover"
+                className="w-10 h-10 rounded-full object-cover ring-2 ring-blue-100"
               />
             ) : (
-              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium text-sm">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-medium text-sm shadow-lg">
                 {getInitials()}
               </div>
             )}
@@ -230,10 +238,10 @@ const Sidebar: React.FC<SidebarProps> = ({
               
               <button 
                 onClick={handleLogout}
-                className="w-full flex justify-center p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="w-full flex justify-center p-2 rounded-lg hover:bg-red-50 text-gray-600 hover:text-red-600 transition-colors"
                 title="Log out"
               >
-                <LogOut className="w-4 h-4 text-gray-600" />
+                <LogOut className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -244,24 +252,58 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   // Full version
   return (
-    <div className="w-64 z-30 bg-white border-r border-gray-200 h-screen flex flex-col transition-all duration-300">
+    <div className="w-64 z-30 bg-white border-r border-gray-200 h-screen flex flex-col transition-all duration-300 shadow-sm">
       {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
               <FileText className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Forms</h1>
+              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                OORB Forms
+              </h1>
             </div>
           </div>
           <button
             onClick={handleToggle}
-            className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-1 rounded-lg hover:bg-white/50 transition-colors"
             title="Minimize sidebar"
           >
             <ChevronLeft className="w-5 h-5 text-gray-600" />
+          </button>
+        </div>
+      </div>
+
+      {/* Navigation Menu */}
+      <div className="p-4 border-b border-gray-200">
+        <div className="space-y-2">
+          <button
+            onClick={() => onNavigate('dashboard')}
+            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
+              currentView === 'dashboard' 
+                ? 'bg-blue-100 text-blue-600 shadow-sm' 
+                : 'hover:bg-gray-100 text-gray-700'
+            }`}
+          >
+            <Home className="w-5 h-5" />
+            <span className="font-medium">Dashboard</span>
+          </button>
+          
+          <button
+            onClick={onCreateForm}
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-green-50 text-gray-700 hover:text-green-600 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            <span className="font-medium">Create Form</span>
+          </button>
+
+          <button
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-purple-50 text-gray-700 hover:text-purple-600 transition-colors"
+          >
+            <BarChart3 className="w-5 h-5" />
+            <span className="font-medium">Analytics</span>
           </button>
         </div>
       </div>
@@ -272,7 +314,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search"
+            placeholder="Search forms..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm bg-gray-50"
@@ -283,7 +325,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       {/* Recent Forms */}
       <div className="flex-1 p-4 overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-medium text-gray-900">Recent forms</h3>
+          <h3 className="text-sm font-semibold text-gray-900">Recent Forms</h3>
           <Clock className="w-4 h-4 text-gray-400" />
         </div>
         
@@ -311,18 +353,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                       <button
                         key={form._id}
                         onClick={() => onEditForm(form._id)}
-                        className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+                        className="w-full text-left p-3 rounded-lg hover:bg-blue-50 transition-colors group border border-transparent hover:border-blue-200"
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-600">
                               {form.title}
                             </p>
-                            {/* <div className="flex items-center space-x-2 mt-1">
+                            <div className="flex items-center space-x-2 mt-1">
                               <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusColor(form.status)}`}>
                                 {form.status}
                               </span>
-                            </div> */}
+                            </div>
                           </div>
                           <ChevronRight className="w-4 h-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                         </div>
@@ -344,16 +386,16 @@ const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* User Profile */}
-      <div className="p-4 border-t border-gray-200">
+      <div className="p-4 border-t border-gray-200 bg-gray-50">
         <div className="flex items-center space-x-3 mb-4">
           {user.avatar ? (
             <img 
               src={user.avatar} 
               alt={user.name}
-              className="w-10 h-10 rounded-full object-cover"
+              className="w-10 h-10 rounded-full object-cover ring-2 ring-blue-100"
             />
           ) : (
-            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-medium">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-medium shadow-lg">
               {getInitials()}
             </div>
           )}
@@ -364,14 +406,14 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
         
         <div className="space-y-1">
-          <button className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors">
+          <button className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-white hover:shadow-sm transition-colors">
             <Settings className="w-4 h-4" />
             <span>Settings</span>
           </button>
           
           <button 
             onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
           >
             <LogOut className="w-4 h-4" />
             <span>Log out</span>

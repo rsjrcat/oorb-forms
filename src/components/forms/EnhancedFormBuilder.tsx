@@ -23,7 +23,9 @@ import {
   Code,
   Zap,
   BarChart3,
-  GitBranch
+  GitBranch,
+  Menu,
+  X
 } from 'lucide-react';
 import { formAPI } from '../../services/api';
 import toast from 'react-hot-toast';
@@ -89,6 +91,8 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
   const [showIntegrations, setShowIntegrations] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [activeTab, setActiveTab] = useState<'fields' | 'logic' | 'design' | 'settings'>('fields');
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileFieldEditorOpen, setMobileFieldEditorOpen] = useState(false);
 
   const fieldTypes = [
     { type: 'text', label: 'Text Input', icon: Type },
@@ -136,6 +140,7 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
       fields: [...prev.fields, newField]
     }));
     setSelectedField(newField.id);
+    setMobileFieldEditorOpen(true);
   };
 
   const updateField = (fieldId: string, updates: Partial<FormField>) => {
@@ -153,6 +158,7 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
       fields: prev.fields.filter(field => field.id !== fieldId)
     }));
     setSelectedField(null);
+    setMobileFieldEditorOpen(false);
   };
 
   const onDragEnd = (result: any) => {
@@ -338,8 +344,18 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
     if (!field) return null;
 
     return (
-      <div className="bg-white border-l border-gray-200 p-6 w-80">
-        <h3 className="text-lg font-semibold mb-4">Field Settings</h3>
+      <div className={`bg-white border-l border-gray-200 p-6 w-80 shadow-lg fixed right-0 top-0 h-full z-20 md:relative md:z-0 ${
+        mobileFieldEditorOpen ? 'block' : 'hidden md:block'
+      }`}>
+        <div className="flex justify-between items-center mb-4 md:hidden">
+          <h3 className="text-lg font-semibold">Field Settings</h3>
+          <button 
+            onClick={() => setMobileFieldEditorOpen(false)}
+            className="p-2 text-gray-500 hover:text-gray-700"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
         
         <div className="space-y-4">
           <div>
@@ -350,7 +366,7 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
               type="text"
               value={field.label}
               onChange={(e) => updateField(field.id, { label: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
           
@@ -363,7 +379,7 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
                 type="text"
                 value={field.placeholder || ''}
                 onChange={(e) => updateField(field.id, { placeholder: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           )}
@@ -384,14 +400,14 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
                         newOptions[index] = e.target.value;
                         updateField(field.id, { options: newOptions });
                       }}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     />
                     <button
                       onClick={() => {
                         const newOptions = field.options?.filter((_, i) => i !== index);
                         updateField(field.id, { options: newOptions });
                       }}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-md"
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -402,7 +418,7 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
                     const newOptions = [...(field.options || []), `Option ${(field.options?.length || 0) + 1}`];
                     updateField(field.id, { options: newOptions });
                   }}
-                  className="w-full px-3 py-2 border border-dashed border-gray-300 rounded-md text-gray-600 hover:bg-gray-50"
+                  className="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50"
                 >
                   + Add Option
                 </button>
@@ -423,7 +439,6 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
             </label>
           </div>
 
-          {/* Advanced Validation */}
           <AdvancedValidation
             field={field}
             onValidationChange={(validation) => updateField(field.id, { validation })}
@@ -431,7 +446,7 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
           
           <button
             onClick={() => deleteField(field.id)}
-            className="w-full px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+            className="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-lg"
           >
             Delete Field
           </button>
@@ -524,13 +539,13 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
 
   if (previewMode) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
         <div className="bg-white border-b border-gray-200 px-6 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold">Form Preview</h1>
             <button
               onClick={() => setPreviewMode(false)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 shadow-lg transition-all"
             >
               Back to Editor
             </button>
@@ -538,7 +553,7 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
         </div>
         
         <div className="max-w-2xl mx-auto p-6">
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+          <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-8">
             <div className="mb-8">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">{form.title}</h1>
               <p className="text-gray-600">{form.description}</p>
@@ -557,7 +572,7 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
               
               <button
                 type="submit"
-                className="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors"
+                className="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 shadow-lg transition-all"
               >
                 Submit
               </button>
@@ -569,33 +584,66 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col md:flex-row">
+      {/* Mobile Sidebar Toggle */}
+      <div className="md:hidden bg-white border-b border-gray-200 px-4 py-3 flex justify-between items-center">
+        <button
+          onClick={onBack}
+          className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back</span>
+        </button>
+        <button
+          onClick={() => setMobileSidebarOpen(!mobileSidebarOpen)}
+          className="p-2 text-gray-600 hover:text-blue-600"
+        >
+          {mobileSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+      </div>
+
       {/* Sidebar - Field Types */}
-      <div className="w-64 bg-white border-r border-gray-200 p-4">
-        <div className="mb-4">
+      <div className={`${mobileSidebarOpen ? 'block' : 'hidden'} md:block w-full md:w-64 bg-white border-r border-gray-200 p-4 shadow-lg fixed md:relative inset-0 z-30 md:z-0 overflow-y-auto`}>
+        <div className="md:mb-4">
           <button
             onClick={onBack}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-800"
+            className="hidden md:flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Back to Dashboard</span>
           </button>
         </div>
 
+        {/* Close button for mobile */}
+        <div className="flex justify-end md:hidden mb-4">
+          <button
+            onClick={() => setMobileSidebarOpen(false)}
+            className="p-2 text-gray-500 hover:text-gray-700"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
         {/* Quick Actions */}
         <div className="mb-6">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Start</h3>
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Quick Start</h3>
           <div className="space-y-2">
             <button
-              onClick={() => setShowAIBuilder(true)}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-left hover:bg-purple-50 rounded-md transition-colors text-purple-700"
+              onClick={() => {
+                setShowAIBuilder(true);
+                setMobileSidebarOpen(false);
+              }}
+              className="w-full flex items-center space-x-2 px-3 py-2 text-left hover:bg-purple-50 rounded-lg transition-colors text-purple-700 border border-purple-200"
             >
               <Sparkles className="w-4 h-4" />
               <span className="text-sm">AI Form Builder</span>
             </button>
             <button
-              onClick={() => setShowTemplates(true)}
-              className="w-full flex items-center space-x-2 px-3 py-2 text-left hover:bg-blue-50 rounded-md transition-colors text-blue-700"
+              onClick={() => {
+                setShowTemplates(true);
+                setMobileSidebarOpen(false);
+              }}
+              className="w-full flex items-center space-x-2 px-3 py-2 text-left hover:bg-blue-50 rounded-lg transition-colors text-blue-700 border border-blue-200"
             >
               <FileText className="w-4 h-4" />
               <span className="text-sm">Use Template</span>
@@ -603,15 +651,18 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
           </div>
         </div>
         
-        <h2 className="text-lg font-semibold mb-4">Add Fields</h2>
-        <div className="space-y-2">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Add Fields</h2>
+        <div className="grid grid-cols-2 md:grid-cols-1 gap-2">
           {fieldTypes.map((fieldType) => {
             const Icon = fieldType.icon;
             return (
               <button
                 key={fieldType.type}
-                onClick={() => addField(fieldType.type as FormField['type'])}
-                className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-gray-50 rounded-md transition-colors"
+                onClick={() => {
+                  addField(fieldType.type as FormField['type']);
+                  setMobileSidebarOpen(false);
+                }}
+                className="w-full flex items-center space-x-3 px-3 py-2 text-left hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200"
               >
                 <Icon className="w-5 h-5 text-gray-600" />
                 <span className="text-sm">{fieldType.label}</span>
@@ -622,16 +673,16 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col mb-20 md:mb-0">
         {/* Header */}
-        <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 md:space-x-4">
               <input
                 type="text"
                 value={form.title}
                 onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
-                className="text-xl font-semibold bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1"
+                className="text-lg md:text-xl font-bold bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-2 py-1 w-full max-w-xs"
               />
               <span className={`px-2 py-1 text-xs font-medium rounded-full ${
                 form.status === 'published' ? 'bg-green-100 text-green-800' :
@@ -641,56 +692,59 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
                 {form.status}
               </span>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1 md:space-x-2">
               <button
                 onClick={() => setPreviewMode(true)}
-                className="flex items-center space-x-2 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-md"
+                className="flex items-center space-x-1 md:space-x-2 p-2 md:px-4 md:py-2 text-gray-600 hover:bg-gray-50 rounded-lg border border-gray-300"
+                title="Preview"
               >
                 <Eye className="w-4 h-4" />
-                <span>Preview</span>
+                <span className="hidden md:inline">Preview</span>
               </button>
               <button 
                 onClick={saveForm}
                 disabled={saving}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                className="flex items-center space-x-1 md:space-x-2 p-2 md:px-4 md:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 shadow-lg"
+                title="Save"
               >
                 <Save className="w-4 h-4" />
-                <span>{saving ? 'Saving...' : 'Save'}</span>
+                <span className="hidden md:inline">{saving ? 'Saving...' : 'Save'}</span>
               </button>
               <button 
                 onClick={publishForm}
                 disabled={publishing || !form._id}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                className="flex items-center space-x-1 md:space-x-2 p-2 md:px-4 md:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 shadow-lg"
+                title="Publish"
               >
                 <Send className="w-4 h-4" />
-                <span>{publishing ? 'Publishing...' : 'Publish'}</span>
+                <span className="hidden md:inline">{publishing ? 'Publishing...' : 'Publish'}</span>
               </button>
               {form.status === 'published' && form.shareUrl && (
                 <>
                   <button
                     onClick={copyShareLink}
-                    className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700"
+                    className="hidden md:flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow-lg"
                   >
                     <Share2 className="w-4 h-4" />
                     <span>Share</span>
                   </button>
                   <button
                     onClick={() => setShowEmbedCode(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                    className="hidden md:flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 shadow-lg"
                   >
                     <Code className="w-4 h-4" />
                     <span>Embed</span>
                   </button>
                   <button
                     onClick={() => setShowIntegrations(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700"
+                    className="hidden md:flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 shadow-lg"
                   >
                     <Zap className="w-4 h-4" />
                     <span>Integrations</span>
                   </button>
                   <button
                     onClick={() => setShowAnalytics(true)}
-                    className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                    className="hidden md:flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-lg"
                   >
                     <BarChart3 className="w-4 h-4" />
                     <span>Analytics</span>
@@ -702,8 +756,8 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
         </div>
 
         {/* Tabs */}
-        <div className="bg-white border-b border-gray-200 px-6">
-          <div className="flex space-x-8">
+        <div className="bg-white border-b border-gray-200 px-4 md:px-6 overflow-x-auto">
+          <div className="flex space-x-4 md:space-x-8 min-w-max">
             {[
               { id: 'fields', label: 'Fields', icon: Type },
               { id: 'logic', label: 'Logic', icon: GitBranch },
@@ -729,24 +783,24 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
           </div>
         </div>
 
-        <div className="flex-1 flex">
+        <div className="flex-1 flex flex-col md:flex-row">
           {/* Form Builder */}
-          <div className="flex-1 p-6">
+          <div className="flex-1 p-4 md:p-6">
             {activeTab === 'fields' && (
               <div className="max-w-2xl mx-auto">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
-                  <div className="mb-8">
+                <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 md:p-8">
+                  <div className="mb-6 md:mb-8">
                     <input
                       type="text"
                       value={form.title}
                       onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
-                      className="text-2xl font-bold text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 w-full"
+                      className="text-xl md:text-2xl font-bold text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-2 py-1 w-full"
                       placeholder="Form Title"
                     />
                     <textarea
                       value={form.description}
                       onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
-                      className="text-gray-600 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 py-1 w-full mt-2 resize-none"
+                      className="text-gray-600 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-2 py-1 w-full mt-2 resize-none"
                       placeholder="Form description"
                       rows={2}
                     />
@@ -762,10 +816,13 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
                                 <div
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
-                                  className={`border rounded-lg p-4 bg-white transition-all ${
+                                  className={`border rounded-xl p-4 bg-white transition-all shadow-sm ${
                                     selectedField === field.id ? 'border-blue-500 ring-2 ring-blue-200' : 'border-gray-200'
-                                  } ${snapshot.isDragging ? 'shadow-lg' : ''}`}
-                                  onClick={() => setSelectedField(field.id)}
+                                  } ${snapshot.isDragging ? 'shadow-2xl' : ''}`}
+                                  onClick={() => {
+                                    setSelectedField(field.id);
+                                    setMobileFieldEditorOpen(true);
+                                  }}
                                 >
                                   <div className="flex items-center justify-between mb-3">
                                     <div {...provided.dragHandleProps} className="cursor-move">
@@ -778,8 +835,9 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setSelectedField(field.id);
+                                        setMobileFieldEditorOpen(true);
                                       }}
-                                      className="p-1 text-gray-400 hover:text-gray-600"
+                                      className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                     >
                                       <Settings className="w-4 h-4" />
                                     </button>
@@ -803,6 +861,12 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
                               <FileText className="w-12 h-12 mx-auto mb-4 text-gray-300" />
                               <p>No fields added yet</p>
                               <p className="text-sm">Add fields from the sidebar to get started</p>
+                              <button
+                                onClick={() => setMobileSidebarOpen(true)}
+                                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 md:hidden"
+                              >
+                                Open Field Library
+                              </button>
                             </div>
                           )}
                         </div>
@@ -825,7 +889,7 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
 
             {activeTab === 'design' && (
               <div className="max-w-2xl mx-auto">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+                <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 md:p-8">
                   {renderDesignTab()}
                 </div>
               </div>
@@ -833,7 +897,7 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
 
             {activeTab === 'settings' && (
               <div className="max-w-2xl mx-auto">
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+                <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-6 md:p-8">
                   <h3 className="text-lg font-semibold mb-4">Form Settings</h3>
                   <div className="space-y-4">
                     <div className="flex items-center space-x-2">
@@ -873,7 +937,7 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
           </div>
 
           {/* Field Editor */}
-          {activeTab === 'fields' && selectedField && renderFieldEditor()}
+          {activeTab === 'fields' && renderFieldEditor()}
         </div>
       </div>
 
@@ -912,6 +976,41 @@ const EnhancedFormBuilder: React.FC<EnhancedFormBuilderProps> = ({ formId, onBac
           onClose={() => setShowAnalytics(false)}
         />
       )}
+
+      {/* Mobile Bottom Bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-2 flex justify-around items-center shadow-lg z-20">
+        <button
+          onClick={() => setMobileSidebarOpen(true)}
+          className="p-3 text-gray-600 hover:text-blue-600 flex flex-col items-center"
+        >
+          <Plus className="w-5 h-5" />
+          <span className="text-xs mt-1">Add Field</span>
+        </button>
+        <button
+          onClick={() => setPreviewMode(true)}
+          className="p-3 text-gray-600 hover:text-blue-600 flex flex-col items-center"
+        >
+          <Eye className="w-5 h-5" />
+          <span className="text-xs mt-1">Preview</span>
+        </button>
+        <button
+          onClick={saveForm}
+          disabled={saving}
+          className="p-3 text-blue-600 hover:text-blue-700 flex flex-col items-center disabled:opacity-50"
+        >
+          <Save className="w-5 h-5" />
+          <span className="text-xs mt-1">Save</span>
+        </button>
+        {selectedField && (
+          <button
+            onClick={() => setMobileFieldEditorOpen(true)}
+            className="p-3 text-purple-600 hover:text-purple-700 flex flex-col items-center"
+          >
+            <Settings className="w-5 h-5" />
+            <span className="text-xs mt-1">Settings</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 };

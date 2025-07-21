@@ -44,6 +44,7 @@ const EnhancedOorbFormsApp: React.FC = () => {
       const response = await formAPI.createForm(formData);
       setCurrentFormId(response.data._id);
       setCurrentView('builder');
+      setShowFormCreationModal(false); // Close modal after successful creation
       toast.success('Form created successfully!');
     } catch (error) {
       toast.error('Failed to create form');

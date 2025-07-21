@@ -12,6 +12,9 @@ import { formAPI, folderAPI } from '../../services/api';
 import form3d from '../../asset/form.png';
 import ai3d from '../../asset/ai.png';
 import temp3d from '../../asset/temp.png';
+import AIFormBuilder from './AIFormBuilder';
+import TemplateLibrary from './TemplateLibrary';
+import FolderContentsModal from './FolderContentsModal';
 
 interface FormItem {
   _id: string;
@@ -57,6 +60,9 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
   const [openFolderModal, setOpenFolderModal] = useState<FolderItem | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [showAIBuilder, setShowAIBuilder] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [draggedForm, setDraggedForm] = useState<FormItem | null>(null);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -140,6 +146,79 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
     const shareLink = `${window.location.origin}/form/${shareUrl}`;
     navigator.clipboard.writeText(shareLink);
     toast.success('Share link copied to clipboard!');
+  };
+
+  const handleAIFormGenerated = (generatedForm: any) => {
+    // Create form with AI generated data
+    const formData = {
+      ...generatedForm,
+      fields: generatedForm.fields.map((field: any, index: number) => ({
+        ...field,
+        id: `field_${Date.now()}_${index}`
+      }))
+    };
+    
+    // Call the create form function
+    createFormFromData(formData);
+    setShowAIBuilder(false);
+  };
+
+  const handleTemplateSelected = (template: any) => {
+    createFormFromData(template);
+    setShowTemplates(false);
+  };
+
+  const createFormFromData = async (formData: any) => {
+    try {
+      const response = await formAPI.createForm(formData);
+      setForms(prev => [response.data, ...prev]);
+      onEditForm(response.data._id);
+      toast.success('Form created successfully!');
+    } catch (error: any) {
+      console.error('Error creating form:', error);
+      toast.error(error.response?.data?.error || 'Failed to create form');
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, form: FormItem) => {
+    setDraggedForm(form);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent, folderId: string) => {
+    e.preventDefault();
+    
+    if (!draggedForm) return;
+
+    try {
+      await folderAPI.moveForms(folderId, [draggedForm._id]);
+      
+      // Update local state
+      setForms(prev => prev.map(form => 
+        form._id === draggedForm._id 
+          ? { ...form, folderId } 
+          : form
+      ));
+      
+      // Update folder form count
+      setFolders(prev => prev.map(folder => 
+        folder._id === folderId 
+          ? { ...folder, formCount: folder.formCount + 1 }
+          : folder
+      ));
+      
+      toast.success('Form moved to folder successfully!');
+    } catch (error: any) {
+      console.error('Error moving form:', error);
+      toast.error(error.response?.data?.error || 'Failed to move form');
+    } finally {
+      setDraggedForm(null);
+    }
   };
 
   const handleItemClick = (itemId: string, itemType: 'form' | 'folder') => {
@@ -329,8 +408,14 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
     
     return (
       <div
-        className={`group relative bg-white border border-transparent hover:border-blue-300 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-all duration-200`}
+        className={`group relative bg-white border border-transparent hover:border-blue-300 hover:bg-blue-50 rounded-lg p-3 cursor-pointer transition-all duration-200 ${
+          !isFolder ? 'draggable' : ''
+        }`}
         onClick={() => handleItemClick(item._id, type)}
+        draggable={!isFolder}
+        onDragStart={!isFolder ? (e) => handleDragStart(e, item as FormItem) : undefined}
+        onDragOver={isFolder ? handleDragOver : undefined}
+        onDrop={isFolder ? (e) => handleDrop(e, item._id) : undefined}
       >
         <div className="flex flex-col items-center text-center space-y-2">
           {/* Icon */}
@@ -558,12 +643,15 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
             </div>
 
             {/* Create by AI */}
-            <div className="bg-violet-200 rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer group">
+            <div 
+              onClick={() => setShowAIBuilder(true)}
+              className="bg-violet-200 rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer group"
+            >
               <div className="flex flex-col sm:flex-row items-start space-y-3 sm:space-y-0 sm:space-x-4">
                 <div className="w-16 h-20 sm:w-20 sm:h-24 bg-purple-50 rounded-lg  flex items-center justify-center group-hover:border-purple-500 transition-colors relative">
                   <div className="absolute top-2 left-2 w-2 h-2 bg-purple-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   {/* <Bot className="w-8 h-8 sm:w-10 sm:h-10 text-purple-400 group-hover:text-purple-500" /> */}
-                  <img src={ai3d} ></img>
+                  <img src={ai3d} alt="AI form builder" />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-2">Create by AI</h3>
@@ -575,7 +663,10 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
             </div>
 
             {/* Use Template */}
-            <div className="bg-green-200 rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer group sm:col-span-2 lg:col-span-1">
+            <div 
+              onClick={() => setShowTemplates(true)}
+              className="bg-green-200 rounded-lg border border-gray-200 p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer group sm:col-span-2 lg:col-span-1"
+            >
               <div className="flex flex-col sm:flex-row items-start space-y-3 sm:space-y-0 sm:space-x-4">
                 <div className="w-16 h-20 sm:w-20 sm:h-24  rounded-lg flex items-center justify-center group-hover:border-green-500 transition-colors relative">
                   <div className="absolute top-2 left-2 w-2 h-2  rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -819,58 +910,32 @@ const FormDashboard: React.FC<FormDashboardProps> = ({
 
       {/* Folder Contents Modal */}
       {openFolderModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-6xl max-h-[90vh] overflow-hidden">
-            {/* Modal Header */}
-            <div className="bg-gray-50 border-b border-gray-200 p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <button
-                    onClick={() => setOpenFolderModal(null)}
-                    className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-                  >
-                    <ArrowLeft className="w-5 h-5 text-gray-600" />
-                  </button>
-                  <div 
-                    className="w-8 h-8 rounded-lg flex items-center justify-center"
-                    style={{ backgroundColor: openFolderModal.color + '20' }}
-                  >
-                    <FolderOpen className="w-5 h-5" style={{ color: openFolderModal.color }} />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">{openFolderModal.name}</h2>
-                    <p className="text-sm text-gray-600">{getFormsInFolder(openFolderModal._id).length} items</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setOpenFolderModal(null)}
-                  className="p-2 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-600" />
-                </button>
-              </div>
-            </div>
+        <FolderContentsModal
+          folder={openFolderModal}
+          forms={getFormsInFolder(openFolderModal._id)}
+          onClose={() => setOpenFolderModal(null)}
+          onCreateForm={onCreateForm}
+          onEditForm={onEditForm}
+          onViewResponses={onViewResponses}
+          onDeleteForm={deleteForm}
+          onCopyShareLink={copyShareLink}
+        />
+      )}
 
-            {/* Modal Content */}
-            <div className="p-4 sm:p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-              {getFormsInFolder(openFolderModal._id).length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-                  {getFormsInFolder(openFolderModal._id).map((form, index) => (
-                    <div key={`form-${form._id}`}>
-                      {renderFileItem(form, 'form', index)}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-16">
-                  <Folder className="w-12 h-12 sm:w-16 sm:h-16 mx-auto text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">This folder is empty</h3>
-                  <p className="text-gray-600">Add forms to organize them</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* AI Form Builder Modal */}
+      {showAIBuilder && (
+        <AIFormBuilder
+          onFormGenerated={handleAIFormGenerated}
+          onClose={() => setShowAIBuilder(false)}
+        />
+      )}
+
+      {/* Template Library Modal */}
+      {showTemplates && (
+        <TemplateLibrary
+          onSelectTemplate={handleTemplateSelected}
+          onClose={() => setShowTemplates(false)}
+        />
       )}
     </div>
   );
