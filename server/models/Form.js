@@ -31,6 +31,10 @@ const formSchema = new mongoose.Schema({
     allowMultipleResponses: { type: Boolean, default: true },
     requireLogin: { type: Boolean, default: false },
     showProgressBar: { type: Boolean, default: true },
+    emailNotifications: { type: Boolean, default: false },
+    responseLimit: { type: Number, default: null },
+    shuffleQuestions: { type: Boolean, default: false },
+    confirmationPage: { type: Boolean, default: true },
     customTheme: {
       primaryColor: { type: String, default: '#3B82F6' },
       backgroundColor: { type: String, default: '#FFFFFF' }

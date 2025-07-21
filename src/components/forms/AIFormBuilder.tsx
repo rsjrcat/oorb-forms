@@ -361,7 +361,7 @@ const AIFormBuilder: React.FC<AIFormBuilderProps> = ({ onFormGenerated, onClose 
                 </>
               ) : (
                 <>
-                  <Send className="w-4 h-4 mr-2" />
+                  <Sparkles className="w-4 h-4 mr-2" />
                   Generate Form
                 </>
               )}
